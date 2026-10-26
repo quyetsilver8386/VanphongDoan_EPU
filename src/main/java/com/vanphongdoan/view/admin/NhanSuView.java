@@ -21,8 +21,7 @@ public class NhanSuView extends JFrame {
     private JComboBox<String> cbVaiTro, cbBan;
     private JCheckBox chkTrangThai;
     private JButton btnThem, btnSua, btnXoa, btnLamMoi, btnTimKiem;
-    
-    // Khai báo DAO để thao tác dữ liệu
+
     private NhanSuDAO nhanSuDAO = new NhanSuDAO();
 
     public NhanSuView(NhanSu ns) {
@@ -43,10 +42,10 @@ public class NhanSuView extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
 
-        // 0. CHÈN THANH MENU BAR VÀO CỬA SỔ
+        // CHÈN THANH MENU BAR VÀO CỬA SỔ
         setJMenuBar(createMenuBar());
 
-        // 1. PANEL HEADER (Thanh tiêu đề trên cùng)
+        // 1. PANEL HEADER (Thanh tiêu đề)
         JPanel panelHeader = new JPanel(new BorderLayout());
         panelHeader.setBackground(new Color(0, 102, 204));
         panelHeader.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
@@ -75,9 +74,9 @@ public class NhanSuView extends JFrame {
         txtHoTen = new JTextField(15);
         txtLop = new JTextField(15);
         txtSdt = new JTextField(15);
-        
-        cbVaiTro = new JComboBox<>(new String[]{"Admin", "Ban Dieu Hanh", "Thanh vien"});
-        cbBan = new JComboBox<>(new String[]{"Khong thuoc ban", "Ban Doi Ngoai", "Ban Su Kien", "Ban Truyen Thong"});
+
+        cbVaiTro = new JComboBox<>(new String[]{"Admin", "Ban Dieu hanh", "Thanh vien"});
+        cbBan = new JComboBox<>(new String[]{"Khong thuoc ban", "Ban Truyen thong", "Ban Su kien", "Ban Chuyen mon"});
         chkTrangThai = new JCheckBox("Dang hoat dong", true);
 
         addFormField(panelForm, "Ma SV:", txtMaSV, gbc, 0);
@@ -87,8 +86,8 @@ public class NhanSuView extends JFrame {
         addFormField(panelForm, "So dien thoai:", txtSdt, gbc, 4);
         addFormField(panelForm, "Vai tro:", cbVaiTro, gbc, 5);
         addFormField(panelForm, "Ban:", cbBan, gbc, 6);
-        
-        gbc.gridx = 0; gbc.gridy = 7; gbc.gridwidth = 2;
+
+        gbc.gridx = 1; gbc.gridy = 7;
         panelForm.add(chkTrangThai, gbc);
 
         // Nút chức năng
@@ -107,7 +106,7 @@ public class NhanSuView extends JFrame {
         // 3. PANEL CENTER (Bảng dữ liệu bên phải)
         JPanel panelCenter = new JPanel(new BorderLayout(5, 5));
         panelCenter.setBorder(BorderFactory.createTitledBorder("Danh sach nhan su trong he thong"));
-        
+
         JPanel panelSearch = new JPanel(new FlowLayout(FlowLayout.LEFT));
         txtTimKiem = new JTextField(20);
         btnTimKiem = new JButton("Tim kiem");
@@ -122,7 +121,7 @@ public class NhanSuView extends JFrame {
         panelCenter.add(scrollPane, BorderLayout.CENTER);
         add(panelCenter, BorderLayout.CENTER);
 
-
+        // KHỞI TẠO SỰ KIỆN VÀ NẠP DỮ LIỆU TỪ SQL SERVER
         initEvents();
         loadDataToTable();
     }
@@ -135,13 +134,26 @@ public class NhanSuView extends JFrame {
         panel.add(comp, gbc);
     }
 
-    // -------------------------------------------------------------
-    // DÁN ĐÈ HÀM initEvents() MỚI VÀ getFormData() VÀO VỊ TRÍ NÀY
-    // -------------------------------------------------------------
+    private void loadDataToTable() {
+        tableModel.setRowCount(0);
+        List<NhanSu> list = nhanSuDAO.getAllNhanSu();
+        for (NhanSu ns : list) {
+            tableModel.addRow(new Object[]{
+                ns.getMaSV(),
+                ns.getHoTen(),
+                ns.getLop(),
+                ns.getSoDienThoai(),
+                ns.getIdVaiTro(),
+                ns.getIdBan() == null ? "0" : ns.getIdBan(),
+                ns.isTrangThai() ? "Hoat dong" : "Khoa"
+            });
+        }
+    }
+
     private void initEvents() {
         btnLamMoi.addActionListener(e -> clearForm());
 
-        // Sự kiện Click dòng trên JTable
+        // Mouse Listener khi click dòng trên JTable
         table.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -149,21 +161,25 @@ public class NhanSuView extends JFrame {
                 if (row >= 0) {
                     txtMaSV.setText(table.getValueAt(row, 0).toString());
                     txtHoTen.setText(table.getValueAt(row, 1).toString());
-                    txtLop.setText(table.getValueAt(row, 2).toString());
-                    txtSdt.setText(table.getValueAt(row, 3).toString());
-                    
+                    txtLop.setText(table.getValueAt(row, 2) != null ? table.getValueAt(row, 2).toString() : "");
+                    txtSdt.setText(table.getValueAt(row, 3) != null ? table.getValueAt(row, 3).toString() : "");
+
                     int idVaiTro = Integer.parseInt(table.getValueAt(row, 4).toString());
-                    cbVaiTro.setSelectedIndex(idVaiTro - 1); 
-                    
+                    cbVaiTro.setSelectedIndex(Math.min(idVaiTro - 1, cbVaiTro.getItemCount() - 1));
+
+                    String banStr = table.getValueAt(row, 5).toString();
+                    int idBan = banStr.equals("0") ? 0 : Integer.parseInt(banStr);
+                    cbBan.setSelectedIndex(Math.min(idBan, cbBan.getItemCount() - 1));
+
                     String trangThai = table.getValueAt(row, 6).toString();
                     chkTrangThai.setSelected(trangThai.equals("Hoat dong"));
-                    
-                    txtMaSV.setEnabled(false); // Khóa không cho sửa Mã SV
+
+                    txtMaSV.setEnabled(false);
                 }
             }
         });
 
-        // Xử lý nút Thêm
+        // Nút Thêm
         btnThem.addActionListener(e -> {
             if (txtMaSV.getText().trim().isEmpty() || txtHoTen.getText().trim().isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Vui lòng nhập Mã SV và Họ tên!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
@@ -179,7 +195,7 @@ public class NhanSuView extends JFrame {
             }
         });
 
-        // Xử lý nút Sửa
+        // Nút Sửa
         btnSua.addActionListener(e -> {
             if (txtMaSV.getText().trim().isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Vui lòng chọn nhân sự cần sửa trên bảng!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
@@ -195,14 +211,14 @@ public class NhanSuView extends JFrame {
             }
         });
 
-        // Xử lý nút Xóa
+        // Nút Xóa
         btnXoa.addActionListener(e -> {
             String maSV = txtMaSV.getText().trim();
             if (maSV.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Vui lòng chọn nhân sự cần xóa trên bảng!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xóa Nhân sự " + maSV + "?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+            int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xóa Nhân sự " + maSV + "?", "Xác nhận xóa", JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
                 if (nhanSuDAO.delete(maSV)) {
                     JOptionPane.showMessageDialog(this, "Xóa thành công!");
@@ -214,7 +230,7 @@ public class NhanSuView extends JFrame {
             }
         });
 
-        // Xử lý nút Tìm kiếm
+        // Nút Tìm kiếm
         btnTimKiem.addActionListener(e -> {
             String keyword = txtTimKiem.getText().trim();
             List<NhanSu> list = nhanSuDAO.search(keyword);
@@ -222,14 +238,13 @@ public class NhanSuView extends JFrame {
             for (NhanSu ns : list) {
                 tableModel.addRow(new Object[]{
                     ns.getMaSV(), ns.getHoTen(), ns.getLop(), ns.getSoDienThoai(),
-                    ns.getIdVaiTro(), ns.getIdBan() == null ? "Không" : ns.getIdBan(),
+                    ns.getIdVaiTro(), ns.getIdBan() == null ? "0" : ns.getIdBan(),
                     ns.isTrangThai() ? "Hoat dong" : "Khoa"
                 });
             }
         });
     }
 
-    // Hàm phụ lấy dữ liệu từ Form nhập
     private NhanSu getFormData() {
         NhanSu ns = new NhanSu();
         ns.setMaSV(txtMaSV.getText().trim());
@@ -242,15 +257,20 @@ public class NhanSuView extends JFrame {
         ns.setTrangThai(chkTrangThai.isSelected());
         return ns;
     }
+
     private void clearForm() {
-        txtMaSV.setText(""); txtMaSV.setEnabled(true);
-        txtMatKhau.setText(""); txtHoTen.setText("");
-        txtLop.setText(""); txtSdt.setText("");
-        cbVaiTro.setSelectedIndex(0); cbBan.setSelectedIndex(0);
+        txtMaSV.setText("");
+        txtMatKhau.setText("");
+        txtHoTen.setText("");
+        txtLop.setText("");
+        txtSdt.setText("");
+        cbVaiTro.setSelectedIndex(0);
+        cbBan.setSelectedIndex(0);
         chkTrangThai.setSelected(true);
+        txtMaSV.setEnabled(true);
     }
 
-    // HÀM TẠO THANH THỰC ĐƠN (MENU BAR)
+    // TẠO MENUBAR ĐIỀU HƯỚNG
     private JMenuBar createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
 
@@ -275,45 +295,30 @@ public class NhanSuView extends JFrame {
         JMenuItem miNhanSu = new JMenuItem("Quản lý Nhân sự");
         JMenuItem miCaTruc = new JMenuItem("Quản lý Ca trực");
         JMenuItem miSuKien = new JMenuItem("Quản lý Sự kiện");
-        JMenuItem miTruyenThong = new JMenuItem("Nhiệm vụ Truyền thông");
 
         miNhanSu.addActionListener(e -> {
-            // Đang ở màn hình Nhân sự
+            // Đang ở NhanSuView
         });
 
+        // ĐÃ SỬA: Chuyển hẳn sang màn hình CaTrucView
         miCaTruc.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Chuyển sang Màn hình Quản lý Ca trực!");
+            this.dispose();
+            new CaTrucView(currentUser).setVisible(true);
         });
 
         miSuKien.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Chuyển sang Màn hình Quản lý Sự kiện!");
+            this.dispose();
+            new SuKienView(currentUser).setVisible(true);
         });
 
         menuQuanLy.add(miNhanSu);
         menuQuanLy.add(miCaTruc);
         menuQuanLy.add(miSuKien);
-        menuQuanLy.add(miTruyenThong);
 
         menuBar.add(menuHeThong);
         menuBar.add(menuQuanLy);
 
         return menuBar;
-    }
-
-    private void loadDataToTable() {
-        tableModel.setRowCount(0);
-        List<NhanSu> list = nhanSuDAO.getAllNhanSu();
-        for (NhanSu ns : list) {
-            tableModel.addRow(new Object[]{
-                ns.getMaSV(), 
-                ns.getHoTen(), 
-                ns.getLop(), 
-                ns.getSoDienThoai(), 
-                ns.getIdVaiTro(), 
-                ns.getIdBan() == null ? "0" : ns.getIdBan(), 
-                ns.isTrangThai() ? "Hoat dong" : "Khoa"
-            });
-        }
     }
 
     public static void main(String[] args) {

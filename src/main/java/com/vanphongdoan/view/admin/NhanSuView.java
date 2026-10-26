@@ -37,7 +37,7 @@ public class NhanSuView extends JFrame {
         } catch (Exception ignored) {}
 
         setTitle("QUAN LY NHAN SU - HE THONG VAN PHONG DOAN");
-        setSize(1000, 620);
+        setSize(1020, 630);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
@@ -45,7 +45,7 @@ public class NhanSuView extends JFrame {
         // CHÈN THANH MENU BAR VÀO CỬA SỔ
         setJMenuBar(createMenuBar());
 
-        // 1. PANEL HEADER (Thanh tiêu đề)
+        // 1. PANEL HEADER (Thanh tiêu đề màu xanh)
         JPanel panelHeader = new JPanel(new BorderLayout());
         panelHeader.setBackground(new Color(0, 102, 204));
         panelHeader.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
@@ -62,7 +62,7 @@ public class NhanSuView extends JFrame {
         panelHeader.add(lblUser, BorderLayout.EAST);
         add(panelHeader, BorderLayout.NORTH);
 
-        // 2. PANEL FORM (Khung nhập liệu bên trái)
+        // 2. PANEL FORM BÊN TRÁI - "Thong tin nhan su" (Bao gồm ô nhập + 4 nút chức năng)
         JPanel panelForm = new JPanel(new GridBagLayout());
         panelForm.setBorder(BorderFactory.createTitledBorder("Thong tin nhan su"));
         GridBagConstraints gbc = new GridBagConstraints();
@@ -90,20 +90,25 @@ public class NhanSuView extends JFrame {
         gbc.gridx = 1; gbc.gridy = 7;
         panelForm.add(chkTrangThai, gbc);
 
-        // Nút chức năng
-        JPanel panelButtons = new JPanel(new GridLayout(2, 2, 5, 5));
+        // Nút chức năng nằm ngay phía dưới của khung "Thông tin nhân sự"
+        JPanel panelButtons = new JPanel(new GridLayout(2, 2, 8, 8));
         btnThem = new JButton("Them");
         btnSua = new JButton("Sua");
         btnXoa = new JButton("Xoa");
         btnLamMoi = new JButton("Lam moi");
-        panelButtons.add(btnThem); panelButtons.add(btnSua);
-        panelButtons.add(btnXoa); panelButtons.add(btnLamMoi);
+
+        panelButtons.add(btnThem);
+        panelButtons.add(btnSua);
+        panelButtons.add(btnXoa);
+        panelButtons.add(btnLamMoi);
 
         gbc.gridx = 0; gbc.gridy = 8; gbc.gridwidth = 2;
+        gbc.insets = new Insets(15, 5, 5, 5);
         panelForm.add(panelButtons, gbc);
+
         add(panelForm, BorderLayout.WEST);
 
-        // 3. PANEL CENTER (Bảng dữ liệu bên phải)
+        // 3. PANEL CENTER BÊN PHẢI - "Danh sach nhan su trong he thong"
         JPanel panelCenter = new JPanel(new BorderLayout(5, 5));
         panelCenter.setBorder(BorderFactory.createTitledBorder("Danh sach nhan su trong he thong"));
 
@@ -300,7 +305,6 @@ public class NhanSuView extends JFrame {
             // Đang ở NhanSuView
         });
 
-        // ĐÃ SỬA: Chuyển hẳn sang màn hình CaTrucView
         miCaTruc.addActionListener(e -> {
             this.dispose();
             new CaTrucView(currentUser).setVisible(true);

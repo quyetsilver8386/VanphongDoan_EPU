@@ -41,10 +41,10 @@ public class CaTrucView extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
 
-        // 0. CHÈN THANH MENU BAR VÀO CỬA SỔ
+        // CHÈN THANH MENU BAR VÀO CỬA SỔ
         setJMenuBar(createMenuBar());
 
-        // 1. PANEL HEADER (Thanh tiêu đề trên cùng)
+        // 1. PANEL HEADER (Thanh tiêu đề màu xanh)
         JPanel panelHeader = new JPanel(new BorderLayout());
         panelHeader.setBackground(new Color(0, 102, 204));
         panelHeader.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
@@ -93,6 +93,7 @@ public class CaTrucView extends JFrame {
         panelButtons.add(btnXoa); panelButtons.add(btnLamMoi);
 
         gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 2;
+        gbc.insets = new Insets(15, 5, 5, 5);
         panelForm.add(panelButtons, gbc);
         add(panelForm, BorderLayout.WEST);
 
@@ -127,48 +128,124 @@ public class CaTrucView extends JFrame {
         panel.add(comp, gbc);
     }
 
+    private void loadDataToTable() {
+        tableModel.setRowCount(0);
+        List<CaTruc> list = caTrucDAO.getAllCaTruc();
+        for (CaTruc ct : list) {
+            tableModel.addRow(new Object[]{
+                ct.getIdCa(),
+                ct.getTenCa(),
+                ct.getNgayTruc() != null ? ct.getNgayTruc().toString() : "",
+                ct.getMaSV() != null ? ct.getMaSV() : "Chưa phân công",
+                ct.getTrangThai(),
+                ct.getGhiChu() != null ? ct.getGhiChu() : ""
+            });
+        }
+    }
+
     private void initEvents() {
         btnLamMoi.addActionListener(e -> clearForm());
 
-        // Bấm chuột vào bảng để đổ ngược thông tin lên Form bên trái
         table.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 int row = table.getSelectedRow();
                 if (row >= 0) {
                     txtIdCa.setText(table.getValueAt(row, 0).toString());
-                    
-                    String tenCa = table.getValueAt(row, 1).toString();
-                    cbTenCa.setSelectedItem(tenCa);
-                    
+                    cbTenCa.setSelectedItem(table.getValueAt(row, 1).toString());
                     txtNgayTruc.setText(table.getValueAt(row, 2).toString());
                     txtMaSV.setText(table.getValueAt(row, 3) != null ? table.getValueAt(row, 3).toString() : "");
-                    
-                    String trangThai = table.getValueAt(row, 4).toString();
-                    cbTrangThai.setSelectedItem(trangThai);
-                    
+                    cbTrangThai.setSelectedItem(table.getValueAt(row, 4).toString());
                     txtGhiChu.setText(table.getValueAt(row, 5) != null ? table.getValueAt(row, 5).toString() : "");
                 }
             }
         });
 
+        // Nút Thêm Ca trực
         btnThem.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Dang xu ly chuc nang Them ca truc...");
-        });
+            if (txtNgayTruc.getText().trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Vui lòng nhập Ngày trực (định dạng YYYY-MM-DD)!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            try {
+                CaTruc ct = new CaTruc();
+                ct.setTenCa(cbTenCa.getSelectedItem().toString());
+                ct.setNgayTruc(java.sql.Date.valueOf(txtNgayTruc.getText().trim()));
+                ct.setMaSV(txtMaSV.getText().trim().isEmpty() ? null : txtMaSV.getText().trim());
+                ct.setTrangThai(cbTrangThai.getSelectedItem().toString());
+                ct.setGhiChu(txtGhiChu.getText().trim());
 
-        btnSua.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Dang xu ly chuc nang Sua ca truc...");
-        });
-
-        btnXoa.addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(this, "Ban co chac muon xoa Ca truc nay?", "Xac nhan", JOptionPane.YES_NO_OPTION);
-            if (confirm == JOptionPane.YES_OPTION) {
-                JOptionPane.showMessageDialog(this, "Dang xu ly chuc nang Xoa ca truc...");
+                if (caTrucDAO.insert(ct)) {
+                    JOptionPane.showMessageDialog(this, "Thêm ca trực thành công!");
+                    loadDataToTable();
+                    clearForm();
+                } else {
+                    JOptionPane.showMessageDialog(this, "Thêm ca trực thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (IllegalArgumentException ex) {
+                JOptionPane.showMessageDialog(this, "Định dạng ngày phải là YYYY-MM-DD (VD: 2026-10-27)!", "Lỗi định dạng", JOptionPane.ERROR_MESSAGE);
             }
         });
 
+        // Nút Sửa Ca trực
+        btnSua.addActionListener(e -> {
+            if (txtIdCa.getText().trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn ca trực cần sửa trên bảng!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            try {
+                CaTruc ct = new CaTruc();
+                ct.setIdCa(Integer.parseInt(txtIdCa.getText().trim()));
+                ct.setTenCa(cbTenCa.getSelectedItem().toString());
+                ct.setNgayTruc(java.sql.Date.valueOf(txtNgayTruc.getText().trim()));
+                ct.setMaSV(txtMaSV.getText().trim().isEmpty() ? null : txtMaSV.getText().trim());
+                ct.setTrangThai(cbTrangThai.getSelectedItem().toString());
+                ct.setGhiChu(txtGhiChu.getText().trim());
+
+                if (caTrucDAO.update(ct)) {
+                    JOptionPane.showMessageDialog(this, "Cập nhật ca trực thành công!");
+                    loadDataToTable();
+                    clearForm();
+                } else {
+                    JOptionPane.showMessageDialog(this, "Cập nhật thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (IllegalArgumentException ex) {
+                JOptionPane.showMessageDialog(this, "Định dạng ngày phải là YYYY-MM-DD!", "Lỗi định dạng", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        // Nút Xóa Ca trực
+        btnXoa.addActionListener(e -> {
+            if (txtIdCa.getText().trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn ca trực cần xóa trên bảng!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            int idCa = Integer.parseInt(txtIdCa.getText().trim());
+            int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xóa Ca trực ID: " + idCa + "?", "Xác nhận xóa", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                if (caTrucDAO.delete(idCa)) {
+                    JOptionPane.showMessageDialog(this, "Xóa ca trực thành công!");
+                    loadDataToTable();
+                    clearForm();
+                } else {
+                    JOptionPane.showMessageDialog(this, "Xóa thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        // Nút Tìm kiếm Ca trực
         btnTimKiem.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Dang xu ly chuc nang Tim kiem ca truc...");
+            String keyword = txtTimKiem.getText().trim();
+            List<CaTruc> list = caTrucDAO.search(keyword);
+            tableModel.setRowCount(0);
+            for (CaTruc ct : list) {
+                tableModel.addRow(new Object[]{
+                    ct.getIdCa(), ct.getTenCa(),
+                    ct.getNgayTruc() != null ? ct.getNgayTruc().toString() : "",
+                    ct.getMaSV() != null ? ct.getMaSV() : "Chưa phân công",
+                    ct.getTrangThai(), ct.getGhiChu() != null ? ct.getGhiChu() : ""
+                });
+            }
         });
     }
 
@@ -181,7 +258,7 @@ public class CaTrucView extends JFrame {
         txtGhiChu.setText("");
     }
 
-    // HÀM TẠO THANH THỰC ĐƠN (MENU BAR) ĐIỀU HƯỚNG GIỮA CÁC MÀN HÌNH
+    // HÀM TẠO THANH THỰC ĐƠN (MENU BAR) ĐIỀU HƯỚNG CÁC MÀN HÌNH CHUẨN
     private JMenuBar createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
 
@@ -216,8 +293,10 @@ public class CaTrucView extends JFrame {
             // Đang ở CaTrucView
         });
 
+        // ĐÃ SỬA: Chuyển sang Màn hình Quản lý Sự kiện mượt mà
         miSuKien.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Chuyển sang Màn hình Quản lý Sự kiện!");
+            this.dispose();
+            new SuKienView(currentUser).setVisible(true);
         });
 
         menuQuanLy.add(miNhanSu);
@@ -229,20 +308,6 @@ public class CaTrucView extends JFrame {
 
         return menuBar;
     }
-    private void loadDataToTable() {
-    tableModel.setRowCount(0);
-    List<CaTruc> list = caTrucDAO.getAllCaTruc();
-    for (CaTruc ct : list) {
-        tableModel.addRow(new Object[]{
-            ct.getIdCa(),
-            ct.getTenCa(),
-            ct.getNgayTruc() != null ? ct.getNgayTruc().toString() : "",
-            ct.getMaSV() != null ? ct.getMaSV() : "Chưa phân công",
-            ct.getTrangThai(),
-            ct.getGhiChu() != null ? ct.getGhiChu() : ""
-        });
-    }
-}
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new CaTrucView(null).setVisible(true));

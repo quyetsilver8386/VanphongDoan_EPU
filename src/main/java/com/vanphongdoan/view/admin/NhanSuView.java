@@ -135,10 +135,13 @@ public class NhanSuView extends JFrame {
         panel.add(comp, gbc);
     }
 
+    // -------------------------------------------------------------
+    // DÁN ĐÈ HÀM initEvents() MỚI VÀ getFormData() VÀO VỊ TRÍ NÀY
+    // -------------------------------------------------------------
     private void initEvents() {
         btnLamMoi.addActionListener(e -> clearForm());
 
-        // Bấm chuột vào bảng để tự đổ ngược thông tin lên Form bên trái
+        // Sự kiện Click dòng trên JTable
         table.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -155,27 +158,90 @@ public class NhanSuView extends JFrame {
                     String trangThai = table.getValueAt(row, 6).toString();
                     chkTrangThai.setSelected(trangThai.equals("Hoat dong"));
                     
-                    txtMaSV.setEnabled(false); // Đã chọn trên bảng thì khóa không cho sửa Mã SV
+                    txtMaSV.setEnabled(false); // Khóa không cho sửa Mã SV
                 }
             }
         });
 
+        // Xử lý nút Thêm
         btnThem.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Dang xu ly chuc nang Them...");
+            if (txtMaSV.getText().trim().isEmpty() || txtHoTen.getText().trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Vui lòng nhập Mã SV và Họ tên!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            NhanSu ns = getFormData();
+            if (nhanSuDAO.insert(ns)) {
+                JOptionPane.showMessageDialog(this, "Thêm nhân sự thành công!");
+                loadDataToTable();
+                clearForm();
+            } else {
+                JOptionPane.showMessageDialog(this, "Thêm thất bại (Mã SV có thể đã tồn tại)!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
         });
 
+        // Xử lý nút Sửa
         btnSua.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Dang xu ly chuc nang Sua...");
+            if (txtMaSV.getText().trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn nhân sự cần sửa trên bảng!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            NhanSu ns = getFormData();
+            if (nhanSuDAO.update(ns)) {
+                JOptionPane.showMessageDialog(this, "Cập nhật nhân sự thành công!");
+                loadDataToTable();
+                clearForm();
+            } else {
+                JOptionPane.showMessageDialog(this, "Cập nhật thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
         });
 
+        // Xử lý nút Xóa
         btnXoa.addActionListener(e -> {
-            int confirm = JOptionPane.showConfirmDialog(this, "Ban co chac muon xoa Nhan su nay?", "Xac nhan", JOptionPane.YES_NO_OPTION);
+            String maSV = txtMaSV.getText().trim();
+            if (maSV.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn nhân sự cần xóa trên bảng!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xóa Nhân sự " + maSV + "?", "Xác nhận", JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
-                JOptionPane.showMessageDialog(this, "Dang xu ly chuc nang Xoa...");
+                if (nhanSuDAO.delete(maSV)) {
+                    JOptionPane.showMessageDialog(this, "Xóa thành công!");
+                    loadDataToTable();
+                    clearForm();
+                } else {
+                    JOptionPane.showMessageDialog(this, "Xóa thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        // Xử lý nút Tìm kiếm
+        btnTimKiem.addActionListener(e -> {
+            String keyword = txtTimKiem.getText().trim();
+            List<NhanSu> list = nhanSuDAO.search(keyword);
+            tableModel.setRowCount(0);
+            for (NhanSu ns : list) {
+                tableModel.addRow(new Object[]{
+                    ns.getMaSV(), ns.getHoTen(), ns.getLop(), ns.getSoDienThoai(),
+                    ns.getIdVaiTro(), ns.getIdBan() == null ? "Không" : ns.getIdBan(),
+                    ns.isTrangThai() ? "Hoat dong" : "Khoa"
+                });
             }
         });
     }
 
+    // Hàm phụ lấy dữ liệu từ Form nhập
+    private NhanSu getFormData() {
+        NhanSu ns = new NhanSu();
+        ns.setMaSV(txtMaSV.getText().trim());
+        ns.setMatKhau(new String(txtMatKhau.getPassword()).trim().isEmpty() ? "123456" : new String(txtMatKhau.getPassword()).trim());
+        ns.setHoTen(txtHoTen.getText().trim());
+        ns.setLop(txtLop.getText().trim());
+        ns.setSoDienThoai(txtSdt.getText().trim());
+        ns.setIdVaiTro(cbVaiTro.getSelectedIndex() + 1);
+        ns.setIdBan(cbBan.getSelectedIndex() == 0 ? null : cbBan.getSelectedIndex());
+        ns.setTrangThai(chkTrangThai.isSelected());
+        return ns;
+    }
     private void clearForm() {
         txtMaSV.setText(""); txtMaSV.setEnabled(true);
         txtMatKhau.setText(""); txtHoTen.setText("");

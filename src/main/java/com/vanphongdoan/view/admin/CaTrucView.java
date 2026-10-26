@@ -116,7 +116,7 @@ public class CaTrucView extends JFrame {
 
         // KHỞI TẠO CÁC SỰ KIỆN NÚT BẤM VÀ MOUSE CLICK
         initEvents();
-        // loadDataToTable(); // Bỏ comment khi CaTrucDAO viết xong hàm getAllCaTruc()
+        loadDataToTable();
     }
 
     private void addFormField(JPanel panel, String labelText, Component comp, GridBagConstraints gbc, int row) {
@@ -229,6 +229,20 @@ public class CaTrucView extends JFrame {
 
         return menuBar;
     }
+    private void loadDataToTable() {
+    tableModel.setRowCount(0);
+    List<CaTruc> list = caTrucDAO.getAllCaTruc();
+    for (CaTruc ct : list) {
+        tableModel.addRow(new Object[]{
+            ct.getIdCa(),
+            ct.getTenCa(),
+            ct.getNgayTruc() != null ? ct.getNgayTruc().toString() : "",
+            ct.getMaSV() != null ? ct.getMaSV() : "Chưa phân công",
+            ct.getTrangThai(),
+            ct.getGhiChu() != null ? ct.getGhiChu() : ""
+        });
+    }
+}
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new CaTrucView(null).setVisible(true));

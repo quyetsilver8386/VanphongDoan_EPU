@@ -115,3 +115,15 @@ INSERT INTO BanChuyenMon (TenBan) VALUES
 INSERT INTO NhanSu (MaSV, MatKhau, HoTen, Lop, SoDienThoai, TrangThai, ID_VaiTro, ID_Ban)
 VALUES ('ADMIN01', '123456', N'Quản trị viên Văn phòng Đoàn', N'Văn phòng Đoàn', '0123456789', 1, 1, NULL);
 GO
+SELECT 
+    MaSV, 
+    HoTen, 
+    Lop, 
+    SoDienThoai,
+    CASE ID_VaiTro
+        WHEN 1 THEN N'Admin'
+        WHEN 2 THEN N'Ban Điều hành'
+        WHEN 3 THEN N'Thành viên'
+    END AS [Tên Vai Trò],
+    CASE WHEN TrangThai = 1 THEN N'Hoạt động' ELSE N'Khóa' END AS [Trạng Thái]
+FROM NhanSu;

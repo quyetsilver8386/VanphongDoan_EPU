@@ -15,11 +15,20 @@ import java.util.List;
 public class CaTrucView extends JFrame {
 
     private NhanSu currentUser;
-    private JTable table;
-    private DefaultTableModel tableModel;
-    private JTextField txtIdCa, txtNgayTruc, txtMaSV, txtTimKiem, txtGhiChu;
-    private JComboBox<String> cbTenCa, cbTrangThai;
-    private JButton btnThem, btnSua, btnXoa, btnLamMoi, btnTimKiem;
+    private final JTable table;
+    private final DefaultTableModel tableModel;
+    private final JTextField txtIdCa;
+    private final JTextField txtNgayTruc;
+    private final JTextField txtMaSV;
+    private final JTextField txtTimKiem;
+    private JTextField txtGhiChu;
+    private final JComboBox<String> cbTenCa;
+    private final JComboBox<String> cbTrangThai;
+    private final JButton btnThem;
+    private final JButton btnSua;
+    private final JButton btnXoa;
+    private final JButton btnLamMoi;
+    private final JButton btnTimKiem;
 
     private CaTrucDAO caTrucDAO = new CaTrucDAO();
 

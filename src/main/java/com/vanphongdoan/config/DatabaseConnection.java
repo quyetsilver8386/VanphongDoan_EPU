@@ -2,30 +2,27 @@ package com.vanphongdoan.config;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.SQLException;
 
 public class DatabaseConnection {
-    private static final String URL = "jdbc:sqlserver://localhost\\SQLEXPRESS01:1433;databaseName=QL_VanPhongDoan;encrypt=false;trustServerCertificate=true;";
-    private static final String USER = "sa"; 
-    private static final String PASSWORD = "123456"; 
 
-    public static Connection getConnection() {
-        Connection conn = null;
+    private static Connection conn = null;
+
+    public static synchronized Connection getConnection() {
         try {
-            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
-            conn = DriverManager.getConnection(URL, USER, PASSWORD);
-        } catch (ClassNotFoundException | SQLException e) {
-            System.err.println("Loi ket noi CSDL: " + e.getMessage());
+            if (conn == null || conn.isClosed()) {
+                Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+                
+                // Kết nối qua cổng mặc định và tài khoản sa (không cần DLL)
+                String url = "jdbc:sqlserver://127.0.0.1\\SQLEXPRESS;databaseName=QL_VanPhongDoan;encrypt=false;trustServerCertificate=true;loginTimeout=3;";
+                String user = "sa";
+                String pass = "123456"; // Đổi thành mật khẩu sa trên máy của bạn
+                
+                conn = DriverManager.getConnection(url, user, pass);
+            }
+        } catch (Exception e) {
+            System.err.println("Lỗi kết nối CSDL: " + e.getMessage());
+            e.printStackTrace();
         }
         return conn;
-    }
-
-    public static void main(String[] args) {
-        Connection conn = getConnection();
-        if (conn != null) {
-            System.out.println("Ket noi SQL Server QL_VanPhongDoan thanh cong!");
-        } else {
-            System.out.println("Ket noi thất bại!");
-        }
     }
 }

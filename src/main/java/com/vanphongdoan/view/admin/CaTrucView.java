@@ -6,63 +6,82 @@ import com.vanphongdoan.model.NhanSu;
 import com.vanphongdoan.view.LoginView;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.TitledBorder;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class CaTrucView extends JFrame {
 
     private NhanSu currentUser;
-    private final JTable table;
-    private final DefaultTableModel tableModel;
-    private final JTextField txtIdCa;
-    private final JTextField txtNgayTruc;
-    private final JTextField txtMaSV;
-    private final JTextField txtTimKiem;
-    private JTextField txtGhiChu;
-    private final JComboBox<String> cbTenCa;
-    private final JComboBox<String> cbTrangThai;
-    private final JButton btnThem;
-    private final JButton btnSua;
-    private final JButton btnXoa;
-    private final JButton btnLamMoi;
-    private final JButton btnTimKiem;
-
     private CaTrucDAO caTrucDAO = new CaTrucDAO();
 
-    public CaTrucView(NhanSu ns) {
-        this.currentUser = ns;
+    // Form Components
+    private JTextField txtIdCa;
+    private JComboBox<String> cbBuoiTruc;
+    private JTextField txtNgayTruc;
+    private JTextField txtThu;
+    private JTextField txtMaSV;
+    private JTextField txtHoTen;
+    private JComboBox<String> cbTrangThai;
+    private JTextField txtGhiChu;
 
-        try {
-            for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (Exception ignored) {}
+    private JButton btnThem;
+    private JButton btnCapNhat;
+    private JButton btnXoa;
+    private JButton btnLamMoi;
+    private JButton btnTaoLichTuan; // <-- Thêm dòng này
 
-        setTitle("QUAN LY CA TRUC - HE THONG VAN PHONG DOAN");
-        setSize(1000, 620);
+    // Table & Filter Components
+    private JTextField txtTimKiem;
+    private JButton btnTimKiem;
+    private JComboBox<String> cbFilterTrangThai;
+    private JTable table;
+    private DefaultTableModel tableModel;
+
+    // Menu Bar
+    private JMenuItem menuNhanSu;
+    private JMenuItem menuCaTruc;
+    private JMenuItem menuSuKien;
+    private JMenuItem menuTruyenThong;
+
+    private boolean isUpdatingSelection = false;
+
+    public CaTrucView() {
+        this(null);
+    }
+
+    public CaTrucView(NhanSu user) {
+        this.currentUser = user;
+        initComponents();
+        loadDataFromDB();
+    }
+
+    private void initComponents() {
+        setTitle("QUẢN LÝ CA TRỰC - HỆ THỐNG VĂN PHÒNG ĐOÀN EPU");
+        setSize(1050, 660);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
 
-        // CHÈN THANH MENU BAR VÀO CỬA SỔ
         setJMenuBar(createMenuBar());
 
-        // 1. PANEL HEADER (Thanh tiêu đề màu xanh)
+        // Header Panel đồng bộ
         JPanel panelHeader = new JPanel(new BorderLayout());
         panelHeader.setBackground(new Color(0, 102, 204));
-        panelHeader.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
+        panelHeader.setBorder(new EmptyBorder(12, 15, 12, 15));
 
-        JLabel lblTitle = new JLabel("QUAN LY LICH TRUC VAN PHONG DOAN");
+        JLabel lblTitle = new JLabel("QUẢN LÝ LỊCH TRỰC VĂN PHÒNG ĐOÀN");
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblTitle.setForeground(Color.WHITE);
 
-        JLabel lblUser = new JLabel("Xin chao: " + (currentUser != null ? currentUser.getHoTen() : "Admin"));
+        String hoTenUser = (currentUser != null && currentUser.getHoTen() != null)
+                ? currentUser.getHoTen() : "Admin";
+        JLabel lblUser = new JLabel("Xin chào: " + hoTenUser);
         lblUser.setFont(new Font("Segoe UI", Font.ITALIC, 13));
         lblUser.setForeground(Color.WHITE);
 
@@ -70,252 +89,465 @@ public class CaTrucView extends JFrame {
         panelHeader.add(lblUser, BorderLayout.EAST);
         add(panelHeader, BorderLayout.NORTH);
 
-        // 2. PANEL FORM (Khung nhập liệu bên trái)
-        JPanel panelForm = new JPanel(new GridBagLayout());
-        panelForm.setBorder(BorderFactory.createTitledBorder("Thong tin ca truc"));
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        // Center Panel
+        JPanel panelCenter = new JPanel(new BorderLayout(12, 10));
+        panelCenter.setBorder(new EmptyBorder(0, 10, 10, 10));
 
-        txtIdCa = new JTextField(15);
-        txtIdCa.setEnabled(false); // Khóa vì ID ca trực tự tăng
-        cbTenCa = new JComboBox<>(new String[]{"Ca Sang (08:00 - 11:30)", "Ca Chieu (13:30 - 17:00)", "Ca Toi (18:00 - 20:30)"});
-        txtNgayTruc = new JTextField(15);
-        txtMaSV = new JTextField(15);
-        cbTrangThai = new JComboBox<>(new String[]{"Chua truc", "Da truc", "Vang"});
-        txtGhiChu = new JTextField(15);
+        panelCenter.add(createLeftPanel(), BorderLayout.WEST);
+        panelCenter.add(createRightPanel(), BorderLayout.CENTER);
 
-        addFormField(panelForm, "ID Ca:", txtIdCa, gbc, 0);
-        addFormField(panelForm, "Ten ca:", cbTenCa, gbc, 1);
-        addFormField(panelForm, "Ngay truc (YYYY-MM-DD):", txtNgayTruc, gbc, 2);
-        addFormField(panelForm, "Ma SV truc:", txtMaSV, gbc, 3);
-        addFormField(panelForm, "Trang thai:", cbTrangThai, gbc, 4);
-        addFormField(panelForm, "Ghi chu:", txtGhiChu, gbc, 5);
-
-        // Nút chức năng
-        JPanel panelButtons = new JPanel(new GridLayout(2, 2, 5, 5));
-        btnThem = new JButton("Them ca truc");
-        btnSua = new JButton("Sua ca truc");
-        btnXoa = new JButton("Xoa ca truc");
-        btnLamMoi = new JButton("Lam moi");
-        panelButtons.add(btnThem); panelButtons.add(btnSua);
-        panelButtons.add(btnXoa); panelButtons.add(btnLamMoi);
-
-        gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 2;
-        gbc.insets = new Insets(15, 5, 5, 5);
-        panelForm.add(panelButtons, gbc);
-        add(panelForm, BorderLayout.WEST);
-
-        // 3. PANEL CENTER (Bảng dữ liệu bên phải)
-        JPanel panelCenter = new JPanel(new BorderLayout(5, 5));
-        panelCenter.setBorder(BorderFactory.createTitledBorder("Danh sach ca truc van phong"));
-
-        JPanel panelSearch = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        txtTimKiem = new JTextField(20);
-        btnTimKiem = new JButton("Tim kiem");
-        panelSearch.add(new JLabel("Tim kiem (MaSV/Ngay):"));
-        panelSearch.add(txtTimKiem); panelSearch.add(btnTimKiem);
-        panelCenter.add(panelSearch, BorderLayout.NORTH);
-
-        String[] columnNames = {"ID Ca", "Ten ca", "Ngay truc", "Ma SV", "Trang thai", "Ghi chu"};
-        tableModel = new DefaultTableModel(columnNames, 0);
-        table = new JTable(tableModel);
-        JScrollPane scrollPane = new JScrollPane(table);
-        panelCenter.add(scrollPane, BorderLayout.CENTER);
         add(panelCenter, BorderLayout.CENTER);
 
-        // KHỞI TẠO CÁC SỰ KIỆN NÚT BẤM VÀ MOUSE CLICK
         initEvents();
-        loadDataToTable();
     }
 
-    private void addFormField(JPanel panel, String labelText, Component comp, GridBagConstraints gbc, int row) {
-        gbc.gridwidth = 1;
-        gbc.gridx = 0; gbc.gridy = row;
-        panel.add(new JLabel(labelText), gbc);
-        gbc.gridx = 1; gbc.gridy = row;
+    private JPanel createLeftPanel() {
+        JPanel panelWest = new JPanel(new BorderLayout(5, 10));
+        panelWest.setPreferredSize(new Dimension(330, 0));
+        panelWest.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(),
+                "Thông tin ca trực",
+                TitledBorder.LEFT,
+                TitledBorder.TOP,
+                new Font("Segoe UI", Font.BOLD, 12)
+        ));
+
+        JPanel panelForm = new JPanel(new GridBagLayout());
+        panelForm.setBorder(new EmptyBorder(8, 8, 8, 8));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(5, 4, 5, 4);
+
+        txtIdCa = new JTextField(15);
+        txtIdCa.setPreferredSize(new Dimension(170, 26));
+        txtIdCa.setEditable(false);
+        txtIdCa.setBackground(new Color(240, 240, 240));
+
+        // CHỈ 2 CA: Sáng và Chiều khớp ràng buộc SQL
+        cbBuoiTruc = new JComboBox<>(new String[]{"Sáng", "Chiều"});
+        cbBuoiTruc.setPreferredSize(new Dimension(170, 26));
+
+        txtNgayTruc = new JTextField(15);
+        txtNgayTruc.setPreferredSize(new Dimension(170, 26));
+        txtNgayTruc.setToolTipText("Định dạng: YYYY-MM-DD");
+
+        txtThu = new JTextField(15);
+        txtThu.setPreferredSize(new Dimension(170, 26));
+
+        txtMaSV = new JTextField(15);
+        txtMaSV.setPreferredSize(new Dimension(170, 26));
+
+        txtHoTen = new JTextField(15);
+        txtHoTen.setPreferredSize(new Dimension(170, 26));
+
+        cbTrangThai = new JComboBox<>(new String[]{
+                "Mở đăng ký",
+                "Đã phân công",
+                "Không trực"
+        });
+        cbTrangThai.setPreferredSize(new Dimension(170, 26));
+
+        // Khóa ô nhập sinh viên khi ca là "Không trực"
+        cbTrangThai.addActionListener(e -> {
+            boolean isKhongTruc = "Không trực".equals(cbTrangThai.getSelectedItem());
+            if (isKhongTruc) {
+                txtMaSV.setText("");
+                txtHoTen.setText("");
+                txtMaSV.setEnabled(false);
+                txtHoTen.setEnabled(false);
+                txtMaSV.setBackground(new Color(240, 240, 240));
+                txtHoTen.setBackground(new Color(240, 240, 240));
+            } else {
+                txtMaSV.setEnabled(true);
+                txtHoTen.setEnabled(true);
+                txtMaSV.setBackground(Color.WHITE);
+                txtHoTen.setBackground(Color.WHITE);
+            }
+        });
+
+        txtGhiChu = new JTextField(15);
+        txtGhiChu.setPreferredSize(new Dimension(170, 26));
+
+        int y = 0;
+        addFormField(panelForm, gbc, "Mã ca trực:", txtIdCa, y++);
+        addFormField(panelForm, gbc, "Buổi trực:", cbBuoiTruc, y++);
+        addFormField(panelForm, gbc, "Ngày trực (YYYY-MM-DD):", txtNgayTruc, y++);
+        addFormField(panelForm, gbc, "Thứ trong tuần:", txtThu, y++);
+        addFormField(panelForm, gbc, "Mã SV trực:", txtMaSV, y++);
+        addFormField(panelForm, gbc, "Họ tên SV:", txtHoTen, y++);
+        addFormField(panelForm, gbc, "Trạng thái:", cbTrangThai, y++);
+        addFormField(panelForm, gbc, "Ghi chú:", txtGhiChu, y++);
+
+        gbc.gridx = 0; gbc.gridy = y; gbc.gridwidth = 2; gbc.weighty = 1.0;
+        panelForm.add(new JPanel(), gbc);
+
+        panelWest.add(panelForm, BorderLayout.CENTER);
+
+        // Buttons
+        JPanel panelButtons = new JPanel(new GridLayout(3, 2, 8, 8)); // Đổi thành 3 hàng x 2 cột
+        panelButtons.setBorder(new EmptyBorder(5, 10, 15, 10));
+
+        btnThem = new JButton("Thêm mới");
+        btnCapNhat = new JButton("Cập nhật");
+        btnXoa = new JButton("Xóa ca");
+        btnLamMoi = new JButton("Làm mới");
+
+        btnTaoLichTuan = new JButton("Tạo lịch tuần");
+        btnTaoLichTuan.setBackground(new Color(40, 167, 69));
+        btnTaoLichTuan.setForeground(Color.WHITE);
+        btnTaoLichTuan.setFont(new Font("Segoe UI", Font.BOLD, 12));
+
+        JButton btnDongDangKy = new JButton("Khóa ca còn lại");
+        btnDongDangKy.setBackground(new Color(220, 53, 69));
+        btnDongDangKy.setForeground(Color.WHITE);
+
+        panelButtons.add(btnThem);
+        panelButtons.add(btnCapNhat);
+        panelButtons.add(btnXoa);
+        panelButtons.add(btnLamMoi);
+        panelButtons.add(btnTaoLichTuan);
+        panelButtons.add(btnDongDangKy);
+
+        panelWest.add(panelButtons, BorderLayout.SOUTH);
+        return panelWest;
+    }
+
+    private void addFormField(JPanel panel, GridBagConstraints gbc, String label, JComponent comp, int y) {
+        gbc.gridx = 0; gbc.gridy = y; gbc.weightx = 0.35;
+        panel.add(new JLabel(label), gbc);
+        gbc.gridx = 1; gbc.weightx = 0.65;
         panel.add(comp, gbc);
     }
 
-    private void loadDataToTable() {
-        tableModel.setRowCount(0);
-        List<CaTruc> list = caTrucDAO.getAllCaTruc();
-        for (CaTruc ct : list) {
-            tableModel.addRow(new Object[]{
-                ct.getIdCa(),
-                ct.getTenCa(),
-                ct.getNgayTruc() != null ? ct.getNgayTruc().toString() : "",
-                ct.getMaSV() != null ? ct.getMaSV() : "Chưa phân công",
-                ct.getTrangThai(),
-                ct.getGhiChu() != null ? ct.getGhiChu() : ""
-            });
-        }
-    }
+    private JPanel createRightPanel() {
+        JPanel panelEast = new JPanel(new BorderLayout(8, 8));
+        panelEast.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createEtchedBorder(),
+                "Danh sách ca trực văn phòng",
+                TitledBorder.LEFT,
+                TitledBorder.TOP,
+                new Font("Segoe UI", Font.BOLD, 12)
+        ));
 
-    private void initEvents() {
-        btnLamMoi.addActionListener(e -> clearForm());
+        JPanel panelSearch = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 5));
+        txtTimKiem = new JTextField(12);
+        txtTimKiem.setPreferredSize(new Dimension(140, 28));
 
-        table.addMouseListener(new MouseAdapter() {
+        btnTimKiem = new JButton("Tìm kiếm");
+        btnTimKiem.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        cbFilterTrangThai = new JComboBox<>(new String[]{
+                "-- Tất cả trạng thái --",
+                "Mở đăng ký",
+                "Đã phân công",
+                "Không trực"
+        });
+        cbFilterTrangThai.setPreferredSize(new Dimension(150, 28));
+
+        panelSearch.add(new JLabel("Tìm kiếm (Mã SV/Ngày):"));
+        panelSearch.add(txtTimKiem);
+        panelSearch.add(btnTimKiem);
+        panelSearch.add(new JLabel("Lọc trạng thái:"));
+        panelSearch.add(cbFilterTrangThai);
+
+        panelEast.add(panelSearch, BorderLayout.NORTH);
+
+        String[] columns = {"Mã Ca", "Buổi trực", "Ngày trực", "Thứ", "Mã SV", "Họ tên SV", "Trạng thái", "Ghi chú"};
+        tableModel = new DefaultTableModel(columns, 0) {
             @Override
-            public void mouseClicked(MouseEvent e) {
-                int row = table.getSelectedRow();
-                if (row >= 0) {
-                    txtIdCa.setText(table.getValueAt(row, 0).toString());
-                    cbTenCa.setSelectedItem(table.getValueAt(row, 1).toString());
-                    txtNgayTruc.setText(table.getValueAt(row, 2).toString());
-                    txtMaSV.setText(table.getValueAt(row, 3) != null ? table.getValueAt(row, 3).toString() : "");
-                    cbTrangThai.setSelectedItem(table.getValueAt(row, 4).toString());
-                    txtGhiChu.setText(table.getValueAt(row, 5) != null ? table.getValueAt(row, 5).toString() : "");
-                }
-            }
-        });
+            public boolean isCellEditable(int row, int col) { return false; }
+        };
 
-        // Nút Thêm Ca trực
-        btnThem.addActionListener(e -> {
-            if (txtNgayTruc.getText().trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Vui lòng nhập Ngày trực (định dạng YYYY-MM-DD)!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            try {
-                CaTruc ct = new CaTruc();
-                ct.setTenCa(cbTenCa.getSelectedItem().toString());
-                ct.setNgayTruc(java.sql.Date.valueOf(txtNgayTruc.getText().trim()));
-                ct.setMaSV(txtMaSV.getText().trim().isEmpty() ? null : txtMaSV.getText().trim());
-                ct.setTrangThai(cbTrangThai.getSelectedItem().toString());
-                ct.setGhiChu(txtGhiChu.getText().trim());
+        table = new JTable(tableModel);
+        table.setRowHeight(24);
+        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-                if (caTrucDAO.insert(ct)) {
-                    JOptionPane.showMessageDialog(this, "Thêm ca trực thành công!");
-                    loadDataToTable();
-                    clearForm();
-                } else {
-                    JOptionPane.showMessageDialog(this, "Thêm ca trực thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-                }
-            } catch (IllegalArgumentException ex) {
-                JOptionPane.showMessageDialog(this, "Định dạng ngày phải là YYYY-MM-DD (VD: 2026-10-27)!", "Lỗi định dạng", JOptionPane.ERROR_MESSAGE);
-            }
-        });
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        table.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
+        table.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
+        table.getColumnModel().getColumn(3).setCellRenderer(centerRenderer);
+        table.getColumnModel().getColumn(4).setCellRenderer(centerRenderer);
+        table.getColumnModel().getColumn(6).setCellRenderer(centerRenderer);
 
-        // Nút Sửa Ca trực
-        btnSua.addActionListener(e -> {
-            if (txtIdCa.getText().trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Vui lòng chọn ca trực cần sửa trên bảng!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            try {
-                CaTruc ct = new CaTruc();
-                ct.setIdCa(Integer.parseInt(txtIdCa.getText().trim()));
-                ct.setTenCa(cbTenCa.getSelectedItem().toString());
-                ct.setNgayTruc(java.sql.Date.valueOf(txtNgayTruc.getText().trim()));
-                ct.setMaSV(txtMaSV.getText().trim().isEmpty() ? null : txtMaSV.getText().trim());
-                ct.setTrangThai(cbTrangThai.getSelectedItem().toString());
-                ct.setGhiChu(txtGhiChu.getText().trim());
+        table.getColumnModel().getColumn(0).setPreferredWidth(60);
+        table.getColumnModel().getColumn(1).setPreferredWidth(100);
+        table.getColumnModel().getColumn(2).setPreferredWidth(90);
+        table.getColumnModel().getColumn(3).setPreferredWidth(60);
+        table.getColumnModel().getColumn(4).setPreferredWidth(90);
+        table.getColumnModel().getColumn(5).setPreferredWidth(130);
+        table.getColumnModel().getColumn(6).setPreferredWidth(100);
+        table.getColumnModel().getColumn(7).setPreferredWidth(140);
 
-                if (caTrucDAO.update(ct)) {
-                    JOptionPane.showMessageDialog(this, "Cập nhật ca trực thành công!");
-                    loadDataToTable();
-                    clearForm();
-                } else {
-                    JOptionPane.showMessageDialog(this, "Cập nhật thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-                }
-            } catch (IllegalArgumentException ex) {
-                JOptionPane.showMessageDialog(this, "Định dạng ngày phải là YYYY-MM-DD!", "Lỗi định dạng", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
-        // Nút Xóa Ca trực
-        btnXoa.addActionListener(e -> {
-            if (txtIdCa.getText().trim().isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Vui lòng chọn ca trực cần xóa trên bảng!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            int idCa = Integer.parseInt(txtIdCa.getText().trim());
-            int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xóa Ca trực ID: " + idCa + "?", "Xác nhận xóa", JOptionPane.YES_NO_OPTION);
-            if (confirm == JOptionPane.YES_OPTION) {
-                if (caTrucDAO.delete(idCa)) {
-                    JOptionPane.showMessageDialog(this, "Xóa ca trực thành công!");
-                    loadDataToTable();
-                    clearForm();
-                } else {
-                    JOptionPane.showMessageDialog(this, "Xóa thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        });
-
-        // Nút Tìm kiếm Ca trực
-        btnTimKiem.addActionListener(e -> {
-            String keyword = txtTimKiem.getText().trim();
-            List<CaTruc> list = caTrucDAO.search(keyword);
-            tableModel.setRowCount(0);
-            for (CaTruc ct : list) {
-                tableModel.addRow(new Object[]{
-                    ct.getIdCa(), ct.getTenCa(),
-                    ct.getNgayTruc() != null ? ct.getNgayTruc().toString() : "",
-                    ct.getMaSV() != null ? ct.getMaSV() : "Chưa phân công",
-                    ct.getTrangThai(), ct.getGhiChu() != null ? ct.getGhiChu() : ""
-                });
-            }
-        });
+        panelEast.add(new JScrollPane(table), BorderLayout.CENTER);
+        return panelEast;
     }
 
-    private void clearForm() {
-        txtIdCa.setText("");
-        cbTenCa.setSelectedIndex(0);
-        txtNgayTruc.setText("");
-        txtMaSV.setText("");
-        cbTrangThai.setSelectedIndex(0);
-        txtGhiChu.setText("");
-    }
-
-    // HÀM TẠO THANH THỰC ĐƠN (MENU BAR) ĐIỀU HƯỚNG CÁC MÀN HÌNH CHUẨN
     private JMenuBar createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
 
-        // Menu 1: Hệ thống
         JMenu menuHeThong = new JMenu("Hệ thống");
-        JMenuItem miDangXuat = new JMenuItem("Đăng xuất");
-        JMenuItem miThoat = new JMenuItem("Thoát");
+        JMenuItem menuDangXuat = new JMenuItem("Đăng xuất");
+        JMenuItem menuThoat = new JMenuItem("Thoát");
 
-        miDangXuat.addActionListener(e -> {
-            this.dispose();
+        menuDangXuat.addActionListener(e -> {
             new LoginView().setVisible(true);
+            this.dispose();
         });
+        menuThoat.addActionListener(e -> System.exit(0));
 
-        miThoat.addActionListener(e -> System.exit(0));
-
-        menuHeThong.add(miDangXuat);
+        menuHeThong.add(menuDangXuat);
         menuHeThong.addSeparator();
-        menuHeThong.add(miThoat);
+        menuHeThong.add(menuThoat);
 
-        // Menu 2: Quản lý Chức năng
         JMenu menuQuanLy = new JMenu("Quản lý Chức năng");
-        JMenuItem miNhanSu = new JMenuItem("Quản lý Nhân sự");
-        JMenuItem miCaTruc = new JMenuItem("Quản lý Ca trực");
-        JMenuItem miSuKien = new JMenuItem("Quản lý Sự kiện");
+        menuNhanSu = new JMenuItem("Quản lý Nhân sự");
+        menuCaTruc = new JMenuItem("Quản lý Ca trực");
+        menuSuKien = new JMenuItem("Quản lý Sự kiện");
+        menuTruyenThong = new JMenuItem("Quản lý Truyền thông");
 
-        miNhanSu.addActionListener(e -> {
+        menuNhanSu.addActionListener(e -> {
             this.dispose();
             new NhanSuView(currentUser).setVisible(true);
         });
 
-        miCaTruc.addActionListener(e -> {
-            // Đang ở CaTrucView
-        });
+        menuCaTruc.addActionListener(e -> clearForm());
 
-        // ĐÃ SỬA: Chuyển sang Màn hình Quản lý Sự kiện mượt mà
-        miSuKien.addActionListener(e -> {
+        menuSuKien.addActionListener(e -> {
             this.dispose();
             new SuKienView(currentUser).setVisible(true);
         });
 
-        menuQuanLy.add(miNhanSu);
-        menuQuanLy.add(miCaTruc);
-        menuQuanLy.add(miSuKien);
+        menuTruyenThong.addActionListener(e -> {
+            this.dispose();
+            new TruyenThongView(currentUser).setVisible(true);
+        });
+
+        menuQuanLy.add(menuNhanSu);
+        menuQuanLy.add(menuCaTruc);
+        menuQuanLy.add(menuSuKien);
+        menuQuanLy.add(menuTruyenThong);
 
         menuBar.add(menuHeThong);
         menuBar.add(menuQuanLy);
-
         return menuBar;
+    }
+
+    private void initEvents() {
+        table.getSelectionModel().addListSelectionListener(e -> {
+            if (e.getValueIsAdjusting() || isUpdatingSelection) return;
+            int row = table.getSelectedRow();
+            if (row != -1) {
+                txtIdCa.setText(getValueOrEmpty(row, 0));
+                cbBuoiTruc.setSelectedItem(getValueOrEmpty(row, 1));
+                txtNgayTruc.setText(getValueOrEmpty(row, 2));
+                txtThu.setText(getValueOrEmpty(row, 3));
+                txtMaSV.setText(getValueOrEmpty(row, 4));
+                txtHoTen.setText(getValueOrEmpty(row, 5));
+                cbTrangThai.setSelectedItem(getValueOrEmpty(row, 6));
+                txtGhiChu.setText(getValueOrEmpty(row, 7));
+            }
+        });
+
+        btnLamMoi.addActionListener(e -> clearForm());
+
+        btnThem.addActionListener(e -> {
+            String ngay = txtNgayTruc.getText().trim();
+            if (ngay.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Vui lòng nhập Ngày trực (YYYY-MM-DD)!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            CaTruc ct = new CaTruc();
+            ct.setBuoiTruc(cbBuoiTruc.getSelectedItem().toString());
+            ct.setNgayTruc(ngay);
+            ct.setThu(txtThu.getText().trim());
+            ct.setTrangThai(cbTrangThai.getSelectedItem().toString());
+            ct.setGhiChu(txtGhiChu.getText().trim());
+
+            if ("Không trực".equals(ct.getTrangThai())) {
+                ct.setMaSV(null);
+                ct.setHoTen(null);
+            } else {
+                ct.setMaSV(txtMaSV.getText().trim());
+                ct.setHoTen(txtHoTen.getText().trim());
+            }
+
+            if (caTrucDAO.insert(ct)) {
+                JOptionPane.showMessageDialog(this, "Thêm ca trực mới thành công!");
+                loadDataFromDB();
+                clearForm();
+            } else {
+                JOptionPane.showMessageDialog(this, "Thêm thất bại! Vui lòng kiểm tra lại ngày trực.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        btnCapNhat.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row == -1) {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn ca trực cần cập nhật!");
+                return;
+            }
+            int id = Integer.parseInt(tableModel.getValueAt(row, 0).toString());
+
+            CaTruc ct = new CaTruc();
+            ct.setIdCa(id);
+            ct.setBuoiTruc(cbBuoiTruc.getSelectedItem().toString());
+            ct.setNgayTruc(txtNgayTruc.getText().trim());
+            ct.setThu(txtThu.getText().trim());
+            ct.setTrangThai(cbTrangThai.getSelectedItem().toString());
+            ct.setGhiChu(txtGhiChu.getText().trim());
+
+            if ("Không trực".equals(ct.getTrangThai())) {
+                ct.setMaSV(null);
+                ct.setHoTen(null);
+            } else {
+                ct.setMaSV(txtMaSV.getText().trim());
+                ct.setHoTen(txtHoTen.getText().trim());
+            }
+
+            if (caTrucDAO.update(ct)) {
+                JOptionPane.showMessageDialog(this, "Cập nhật ca trực thành công!");
+                loadDataFromDB();
+            } else {
+                JOptionPane.showMessageDialog(this, "Cập nhật thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        btnXoa.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row == -1) {
+                JOptionPane.showMessageDialog(this, "Vui lòng chọn ca trực cần xóa!");
+                return;
+            }
+            int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn xóa ca trực này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                int id = Integer.parseInt(tableModel.getValueAt(row, 0).toString());
+                if (caTrucDAO.delete(id)) {
+                    JOptionPane.showMessageDialog(this, "Đã xóa ca trực!");
+                    loadDataFromDB();
+                    clearForm();
+                } else {
+                    JOptionPane.showMessageDialog(this, "Xóa ca trực thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        
+        btnTaoLichTuan.addActionListener(e -> {
+            // Mặc định lấy ngày Thứ Hai của tuần kế tiếp
+            java.time.LocalDate nextMonday = java.time.LocalDate.now()
+                    .with(java.time.DayOfWeek.MONDAY)
+                    .plusWeeks(1);
+
+            String input = JOptionPane.showInputDialog(
+                    this,
+                    "Nhập ngày Thứ Hai bắt đầu tuần trực (YYYY-MM-DD):",
+                    nextMonday.toString()
+            );
+
+            if (input != null && !input.trim().isEmpty()) {
+                try {
+                    java.time.LocalDate ngayThu2 = java.time.LocalDate.parse(input.trim());
+                    if (caTrucDAO.taoLichTrucTuan(ngayThu2)) {
+                        JOptionPane.showMessageDialog(this, 
+                                "Đã tạo thành công danh sách ca trực tuần (10 ca từ Thứ 2 đến Thứ 6) ở trạng thái 'Mở đăng ký'!",
+                                "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                        loadDataFromDB();
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Tạo lịch tuần thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, "Định dạng ngày không hợp lệ! Vui lòng nhập đúng chuẩn YYYY-MM-DD.", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+                }
+            }
+        });
+
+        btnTimKiem.addActionListener(e -> locCaTruc());
+        txtTimKiem.addActionListener(e -> locCaTruc());
+        cbFilterTrangThai.addActionListener(e -> locCaTruc());
+    }
+
+    private String getValueOrEmpty(int row, int col) {
+        Object val = tableModel.getValueAt(row, col);
+        return val != null ? val.toString() : "";
+    }
+
+    private void clearForm() {
+        txtIdCa.setText("");
+        cbBuoiTruc.setSelectedIndex(0);
+        txtNgayTruc.setText(LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        txtThu.setText("");
+        txtMaSV.setText("");
+        txtHoTen.setText("");
+        cbTrangThai.setSelectedIndex(0);
+        txtGhiChu.setText("");
+        table.clearSelection();
+    }
+
+    private void loadDataFromDB() {
+        // Chạy truy vấn SQL ở luồng phụ ngầm (Background Thread)
+        SwingWorker<List<CaTruc>, Void> worker = new SwingWorker<>() {
+            @Override
+            protected List<CaTruc> doInBackground() {
+                return caTrucDAO.getAllCaTruc();
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    List<CaTruc> list = get();
+                    isUpdatingSelection = true;
+                    tableModel.setRowCount(0);
+                    for (CaTruc ct : list) {
+                        tableModel.addRow(new Object[]{
+                                ct.getIdCa(),
+                                ct.getBuoiTruc(),
+                                ct.getNgayTruc(),
+                                ct.getThu() != null ? ct.getThu() : "",
+                                ct.getMaSV() != null ? ct.getMaSV() : "",
+                                ct.getHoTen() != null ? ct.getHoTen() : "",
+                                ct.getTrangThai(),
+                                ct.getGhiChu() != null ? ct.getGhiChu() : ""
+                        });
+                    }
+                    isUpdatingSelection = false;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        worker.execute();
+    }
+
+    private void locCaTruc() {
+        String keyword = txtTimKiem.getText().trim().toLowerCase();
+        String selectedStatus = cbFilterTrangThai.getSelectedItem().toString();
+
+        isUpdatingSelection = true;
+        tableModel.setRowCount(0);
+        List<CaTruc> list = caTrucDAO.getAllCaTruc();
+        for (CaTruc ct : list) {
+            String ma = ct.getMaSV() != null ? ct.getMaSV().toLowerCase() : "";
+            String ngay = ct.getNgayTruc() != null ? ct.getNgayTruc().toLowerCase() : "";
+            String hoTen = ct.getHoTen() != null ? ct.getHoTen().toLowerCase() : "";
+
+            boolean matchKeyword = keyword.isEmpty() || ma.contains(keyword) || ngay.contains(keyword) || hoTen.contains(keyword);
+            boolean matchStatus = cbFilterTrangThai.getSelectedIndex() == 0 || ct.getTrangThai().equalsIgnoreCase(selectedStatus);
+
+            if (matchKeyword && matchStatus) {
+                tableModel.addRow(new Object[]{
+                        ct.getIdCa(),
+                        ct.getBuoiTruc(),
+                        ct.getNgayTruc(),
+                        ct.getThu() != null ? ct.getThu() : "",
+                        ct.getMaSV() != null ? ct.getMaSV() : "",
+                        ct.getHoTen() != null ? ct.getHoTen() : "",
+                        ct.getTrangThai(),
+                        ct.getGhiChu() != null ? ct.getGhiChu() : ""
+                });
+            }
+        }
+        isUpdatingSelection = false;
     }
 
     public static void main(String[] args) {

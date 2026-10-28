@@ -1,28 +1,70 @@
 package com.vanphongdoan.model;
 
-import java.sql.Date;
-
 public class SuKien {
     private int idSuKien;
     private String tenSuKien;
-    private Date ngayToChuc;
+    private String ngayToChuc;
     private String diaDiem;
-    private String moTa;
+    private double kinhPhi;
+    private String trangThai;
 
-    public SuKien() {}
+    public SuKien() {
+    }
 
-    public int getIdSuKien() { return idSuKien; }
-    public void setIdSuKien(int idSuKien) { this.idSuKien = idSuKien; }
+    public SuKien(int idSuKien, String tenSuKien, String ngayToChuc, String diaDiem, double kinhPhi, String trangThai) {
+        this.idSuKien = idSuKien;
+        this.tenSuKien = tenSuKien;
+        this.ngayToChuc = ngayToChuc;
+        this.diaDiem = diaDiem;
+        this.kinhPhi = kinhPhi;
+        this.trangThai = trangThai;
+    }
 
-    public String getTenSuKien() { return tenSuKien; }
-    public void setTenSuKien(String tenSuKien) { this.tenSuKien = tenSuKien; }
+    public int getIdSuKien() {
+        return idSuKien;
+    }
 
-    public Date getNgayToChuc() { return ngayToChuc; }
-    public void setNgayToChuc(Date ngayToChuc) { this.ngayToChuc = ngayToChuc; }
+    public void setIdSuKien(int idSuKien) {
+        this.idSuKien = idSuKien;
+    }
 
-    public String getDiaDiem() { return diaDiem; }
-    public void setDiaDiem(String diaDiem) { this.diaDiem = diaDiem; }
+    public String getTenSuKien() {
+        return tenSuKien;
+    }
 
-    public String getMoTa() { return moTa; }
-    public void setMoTa(String moTa) { this.moTa = moTa; }
+    public void setTenSuKien(String tenSuKien) {
+        this.tenSuKien = tenSuKien;
+    }
+
+    public String getNgayToChuc() {
+        return ngayToChuc;
+    }
+
+    public void setNgayToChuc(String ngayToChuc) {
+        this.ngayToChuc = ngayToChuc;
+    }
+
+    public String getDiaDiem() {
+        return diaDiem;
+    }
+
+    public void setDiaDiem(String diaDiem) {
+        this.diaDiem = diaDiem;
+    }
+
+    public double getKinhPhi() {
+        return kinhPhi;
+    }
+
+    public void setKinhPhi(double kinhPhi) {
+        this.kinhPhi = kinhPhi;
+    }
+
+    public String getTrangThai() {
+        return trangThai;
+    }
+
+    public void setTrangThai(String trangThai) {
+        this.trangThai = trangThai;
+    }
 }

@@ -19,7 +19,6 @@ public class TruyenThongView extends JFrame {
     private NhanSu currentUser;
     private NhanSuDAO nhanSuDAO = new NhanSuDAO();
 
-    // Components bên trái
     private JTextField txtIdBaiViet;
     private JTextField txtTieuDe;
     private JTextField txtNguoiPhuTrach;
@@ -32,22 +31,23 @@ public class TruyenThongView extends JFrame {
     private JButton btnXoa;
     private JButton btnLamMoi;
 
-    // Components bên phải
     private JTextField txtTimKiem;
     private JButton btnTimKiem;
     private JTable table;
     private DefaultTableModel tableModel;
 
-    // Menu Bar
     private JMenuItem menuNhanSu;
     private JMenuItem menuCaTruc;
     private JMenuItem menuSuKien;
     private JMenuItem menuTruyenThong;
 
+    public TruyenThongView() {
+        this(null);
+    }
+
     public TruyenThongView(NhanSu user) {
         this.currentUser = user;
 
-        // 1. Kiểm soát quyền bảo mật
         if (currentUser != null && currentUser.getIdVaiTro() == 2) {
             PhanQuyen pq = nhanSuDAO.getPhanQuyenByUsername(currentUser.getTenDangNhap());
             if (pq == null || !pq.isQuyenTruyenThong()) {
@@ -75,7 +75,6 @@ public class TruyenThongView extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
 
-        // Khởi tạo Menu Bar
         setJMenuBar(createMenuBar());
 
         initUI();
@@ -84,7 +83,6 @@ public class TruyenThongView extends JFrame {
     }
 
     private void initUI() {
-        // ================= 1. HEADER =================
         JPanel panelHeader = new JPanel(new BorderLayout());
         panelHeader.setBackground(new Color(0, 102, 204));
         panelHeader.setBorder(new EmptyBorder(12, 20, 12, 20));
@@ -102,7 +100,6 @@ public class TruyenThongView extends JFrame {
         panelHeader.add(lblUser, BorderLayout.EAST);
         add(panelHeader, BorderLayout.NORTH);
 
-        // ================= 2. PANEL FORM TRÁI =================
         JPanel panelLeftContainer = new JPanel(new BorderLayout());
         panelLeftContainer.setBorder(new EmptyBorder(0, 10, 10, 5));
         panelLeftContainer.setPreferredSize(new Dimension(380, 0));
@@ -142,43 +139,36 @@ public class TruyenThongView extends JFrame {
         JScrollPane scrollNoiDung = new JScrollPane(txtNoiDung);
 
         int row = 0;
-        // Mã bài viết
         gbc.gridx = 0; gbc.gridy = row++;
         panelLeft.add(new JLabel("Mã ấn phẩm/bài viết:"), gbc);
         gbc.gridy = row++;
         panelLeft.add(txtIdBaiViet, gbc);
 
-        // Tiêu đề
         gbc.gridy = row++;
         panelLeft.add(new JLabel("Tiêu đề ấn phẩm / bài viết:"), gbc);
         gbc.gridy = row++;
         panelLeft.add(txtTieuDe, gbc);
 
-        // Người phụ trách
         gbc.gridy = row++;
         panelLeft.add(new JLabel("Người phụ trách (Họ tên / MSSV):"), gbc);
         gbc.gridy = row++;
         panelLeft.add(txtNguoiPhuTrach, gbc);
 
-        // Deadline
         gbc.gridy = row++;
         panelLeft.add(new JLabel("Thời hạn hoàn thành (YYYY-MM-DD):"), gbc);
         gbc.gridy = row++;
         panelLeft.add(txtDeadline, gbc);
 
-        // Trạng thái
         gbc.gridy = row++;
         panelLeft.add(new JLabel("Trạng thái tiến độ:"), gbc);
         gbc.gridy = row++;
         panelLeft.add(cbTrangThai, gbc);
 
-        // Ghi chú nội dung
         gbc.gridy = row++;
         panelLeft.add(new JLabel("Nội dung chi tiết / Ghi chú:"), gbc);
         gbc.gridy = row++;
         panelLeft.add(scrollNoiDung, gbc);
 
-        // Cụm 4 nút bấm
         JPanel panelBtn = new JPanel(new GridLayout(2, 2, 10, 10));
         panelBtn.setBorder(new EmptyBorder(10, 0, 5, 0));
         btnThem = new JButton("Thêm mới");
@@ -202,7 +192,6 @@ public class TruyenThongView extends JFrame {
         panelLeftContainer.add(panelLeft, BorderLayout.CENTER);
         add(panelLeftContainer, BorderLayout.WEST);
 
-        // ================= 3. BẢNG DỮ LIỆU PHẢI =================
         JPanel panelRight = new JPanel(new BorderLayout(5, 8));
         panelRight.setBorder(new EmptyBorder(0, 5, 10, 15));
 
@@ -211,7 +200,6 @@ public class TruyenThongView extends JFrame {
                 BorderFactory.createEtchedBorder(), "Danh sách ấn phẩm truyền thông trong hệ thống",
                 TitledBorder.LEFT, TitledBorder.TOP, new Font("Segoe UI", Font.BOLD, 12), new Color(0, 51, 102)));
 
-        // Thanh tìm kiếm
         JPanel pnlSearch = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
         pnlSearch.add(new JLabel("Tìm kiếm (Tiêu đề / Người phụ trách):"));
         txtTimKiem = new JTextField(24);
@@ -223,7 +211,6 @@ public class TruyenThongView extends JFrame {
         pnlSearch.add(btnTimKiem);
         panelBorderRight.add(pnlSearch, BorderLayout.NORTH);
 
-        // Bảng JTable
         String[] columns = {"ID", "Tiêu đề ấn phẩm", "Người phụ trách", "Deadline", "Trạng thái", "Ghi chú"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -239,7 +226,6 @@ public class TruyenThongView extends JFrame {
         table.getTableHeader().setBackground(new Color(230, 240, 250));
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        // Độ rộng cột
         table.getColumnModel().getColumn(0).setPreferredWidth(45);
         table.getColumnModel().getColumn(1).setPreferredWidth(220);
         table.getColumnModel().getColumn(2).setPreferredWidth(130);
@@ -247,7 +233,6 @@ public class TruyenThongView extends JFrame {
         table.getColumnModel().getColumn(4).setPreferredWidth(120);
         table.getColumnModel().getColumn(5).setPreferredWidth(160);
 
-        // Căn giữa cột ID và Deadline
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
         table.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
@@ -298,7 +283,6 @@ public class TruyenThongView extends JFrame {
         menuChucNang.add(menuSuKien);
         menuChucNang.add(menuTruyenThong);
 
-        // Phân quyền menu bar
         if (currentUser != null && currentUser.getIdVaiTro() == 2) {
             PhanQuyen pq = nhanSuDAO.getPhanQuyenByUsername(currentUser.getTenDangNhap());
             if (pq != null) {
@@ -415,12 +399,7 @@ public class TruyenThongView extends JFrame {
         tableModel.addRow(new Object[]{"3", "Minigame Tìm Hiểu Truyền Thống Đoàn", "Nguyễn Văn A", "2026-11-15", "Lên ý tưởng", "Chuẩn bị 5 phần quà"});
     }
 
-    public TruyenThongView() {
-        this(null);
-    }
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            new TruyenThongView(null).setVisible(true);
-        });
+        SwingUtilities.invokeLater(() -> new TruyenThongView(null).setVisible(true));
     }
 }

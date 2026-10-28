@@ -47,17 +47,15 @@ public class LoginView extends JFrame implements ActionListener {
     }
 
     private void initUI() {
-        // --- 1. BANNER TRÁI (Nhận diện & Khu vực ảnh) ---
         JPanel pnlLeftBanner = new JPanel();
         pnlLeftBanner.setBackground(new Color(0, 86, 150));
         pnlLeftBanner.setPreferredSize(new Dimension(320, 0));
         pnlLeftBanner.setLayout(new BoxLayout(pnlLeftBanner, BoxLayout.Y_AXIS));
         pnlLeftBanner.setBorder(new EmptyBorder(25, 20, 25, 20));
 
-        // Tiêu đề trường & đoàn
         JLabel lblLogoText = new JLabel("ĐOÀN TNCS HỒ CHÍ MINH");
         lblLogoText.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        lblLogoText.setForeground(new Color(255, 204, 0)); // Màu vàng
+        lblLogoText.setForeground(new Color(255, 204, 0));
         lblLogoText.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JLabel lblSchool = new JLabel("TRƯỜNG ĐẠI HỌC ĐIỆN LỰC");
@@ -70,12 +68,11 @@ public class LoginView extends JFrame implements ActionListener {
         lblSub.setForeground(new Color(220, 235, 255));
         lblSub.setAlignmentX(Component.CENTER_ALIGNMENT);
 
-        // KHU VỰC HIỂN THỊ HÌNH ẢNH (Ảnh logo hoặc ảnh đại diện)
         lblImage = new JLabel();
         lblImage.setAlignmentX(Component.CENTER_ALIGNMENT);
         lblImage.setPreferredSize(new Dimension(100, 100));
         lblImage.setMaximumSize(new Dimension(100, 100));
-        loadCustomImage(); // Nạp ảnh tự động
+        loadCustomImage();
 
         JLabel lblSlogan = new JLabel("<html><center><br><b>HỆ THỐNG ĐIỀU HÀNH TÁC NGHIỆP</b><br>"
                 + "• Quản lý Lịch trực văn phòng<br>"
@@ -91,18 +88,16 @@ public class LoginView extends JFrame implements ActionListener {
         pnlLeftBanner.add(Box.createVerticalStrut(4));
         pnlLeftBanner.add(lblSub);
         pnlLeftBanner.add(Box.createVerticalStrut(15));
-        pnlLeftBanner.add(lblImage); // Thêm ảnh vào giữa
+        pnlLeftBanner.add(lblImage);
         pnlLeftBanner.add(Box.createVerticalStrut(10));
         pnlLeftBanner.add(lblSlogan);
 
         add(pnlLeftBanner, BorderLayout.WEST);
 
-        // --- 2. FORM ĐĂNG NHẬP BÊN PHẢI ---
         JPanel pnlRight = new JPanel(new BorderLayout());
         pnlRight.setBackground(Color.WHITE);
         pnlRight.setBorder(new EmptyBorder(30, 40, 30, 40));
 
-        // Tiêu đề form
         JPanel pnlTitle = new JPanel(new FlowLayout(FlowLayout.CENTER));
         pnlTitle.setOpaque(false);
         JLabel lblLogin = new JLabel("ĐĂNG NHẬP HỆ THỐNG");
@@ -111,7 +106,6 @@ public class LoginView extends JFrame implements ActionListener {
         pnlTitle.add(lblLogin);
         pnlRight.add(pnlTitle, BorderLayout.NORTH);
 
-        // Các ô nhập
         JPanel pnlInputs = new JPanel(new GridBagLayout());
         pnlInputs.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
@@ -147,7 +141,7 @@ public class LoginView extends JFrame implements ActionListener {
             }
         });
 
-        JLabel lblUserTag = new JLabel("Tên đăng nhập:");
+        JLabel lblUserTag = new JLabel("Tên đăng nhập / Mã SV:");
         lblUserTag.setFont(new Font("Segoe UI", Font.BOLD, 13));
         gbc.gridx = 0; gbc.gridy = 0;
         pnlInputs.add(lblUserTag, gbc);
@@ -167,7 +161,6 @@ public class LoginView extends JFrame implements ActionListener {
         gbc.insets = new Insets(2, 0, 15, 0);
         pnlInputs.add(chkHienMatKhau, gbc);
 
-        // Hàng nút bấm
         JPanel pnlButtons = new JPanel(new GridLayout(1, 2, 12, 0));
         pnlButtons.setOpaque(false);
         pnlButtons.setPreferredSize(new Dimension(240, 36));
@@ -194,7 +187,6 @@ public class LoginView extends JFrame implements ActionListener {
         add(pnlRight, BorderLayout.CENTER);
     }
 
-    // Hàm load ảnh thông minh: Thử tìm logo.png trong resources hoặc ngoài thư mục
     private void loadCustomImage() {
         ImageIcon icon = null;
         try {
@@ -212,7 +204,6 @@ public class LoginView extends JFrame implements ActionListener {
                 Image img = icon.getImage().getScaledInstance(95, 95, Image.SCALE_SMOOTH);
                 lblImage.setIcon(new ImageIcon(img));
             } else {
-                // Nếu chưa có file ảnh, hiển thị khung placeholder đẹp mắt
                 lblImage.setText("★ EPU Đoàn ★");
                 lblImage.setFont(new Font("Segoe UI", Font.BOLD, 15));
                 lblImage.setForeground(new Color(255, 204, 0));
@@ -229,80 +220,59 @@ public class LoginView extends JFrame implements ActionListener {
         if (e.getSource() == btnThoat) {
             System.exit(0);
         } else if (e.getSource() == btnDangNhap) {
-            String username = txtTenDangNhap.getText().trim();
-            String password = new String(txtMatKhau.getPassword()).trim();
-
-            if (username.isEmpty() || password.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            // Đổi trỏ chuột sang hình đồng hồ cát để người dùng biết đang tải
-            setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-            btnDangNhap.setEnabled(false);
-
-            // Chạy kiểm tra đăng nhập trên luồng phụ ngầm
-            new Thread(() -> {
-                try {
-                    // Gọi hàm kiểm tra đăng nhập từ DAO / Controller của bạn
-                    NhanSu user = nhanSuDAO.checkLogin(username, password); 
-
-                    SwingUtilities.invokeLater(() -> {
-                        setCursor(Cursor.getDefaultCursor());
-                        btnDangNhap.setEnabled(true);
-
-                        if (user != null) {
-                            // Mở màn hình chính tương ứng
-                            new NhanSuView(user).setVisible(true);
-                            this.dispose();
-                        } else {
-                            JOptionPane.showMessageDialog(this, "Tên đăng nhập hoặc mật khẩu không chính xác!", "Lỗi đăng nhập", JOptionPane.ERROR_MESSAGE);
-                        }
-                    });
-                } catch (Exception ex) {
-                    SwingUtilities.invokeLater(() -> {
-                        setCursor(Cursor.getDefaultCursor());
-                        btnDangNhap.setEnabled(true);
-                        JOptionPane.showMessageDialog(this, "Không thể kết nối CSDL: " + ex.getMessage(), "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
-                    });
-                    ex.printStackTrace();
-                }
-            }).start();
+            xuLyDangNhap();
         }
     }
 
     private void xuLyDangNhap() {
-        String tenDN = txtTenDangNhap.getText().trim();
-        String matKhau = new String(txtMatKhau.getPassword()).trim();
+        String username = txtTenDangNhap.getText().trim();
+        String password = new String(txtMatKhau.getPassword()).trim();
 
-        if (tenDN.isEmpty() || matKhau.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ Tên đăng nhập và Mật khẩu!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+        if (username.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        NhanSu user = nhanSuDAO.checkLogin(tenDN, matKhau);
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        btnDangNhap.setEnabled(false);
 
-        if (user == null) {
-            JOptionPane.showMessageDialog(this, "Tên đăng nhập hoặc mật khẩu không chính xác!", "Đăng nhập thất bại", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
+        new Thread(() -> {
+            try {
+                NhanSu user = nhanSuDAO.checkLogin(username, password);
 
-        if (!user.isTrangThai()) {
-            JOptionPane.showMessageDialog(this, "Tài khoản của bạn đang bị TẠM KHÓA!\nVui lòng liên hệ Admin Văn phòng Đoàn.", "Khóa tài khoản", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
+                SwingUtilities.invokeLater(() -> {
+                    setCursor(Cursor.getDefaultCursor());
+                    btnDangNhap.setEnabled(true);
 
-        JOptionPane.showMessageDialog(this, "Đăng nhập thành công!\nXin chào: " + user.getHoTen() + " (" + user.getTenVaiTro() + ")");
-        this.dispose();
+                    if (user == null) {
+                        JOptionPane.showMessageDialog(this, "Tên đăng nhập hoặc mật khẩu không chính xác!", "Lỗi đăng nhập", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
 
-        // ĐIỀU HƯỚNG THEO VAI TRÒ HỆ THỐNG
-        if (user.getIdVaiTro() == 1) {
-            new NhanSuView(user).setVisible(true);
-        } else if (user.getIdVaiTro() == 2) {
-            new NhanSuView(user).setVisible(true);
-        } else {
-            new DashboardView(user).setVisible(true);
-        }
+                    if (!user.isTrangThai()) {
+                        JOptionPane.showMessageDialog(this, "Tài khoản của bạn đang bị TẠM KHÓA!\nVui lòng liên hệ Admin Văn phòng Đoàn.", "Khóa tài khoản", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    JOptionPane.showMessageDialog(this, "Đăng nhập thành công!\nXin chào: " + user.getHoTen());
+                    this.dispose();
+
+                    // --- PHÂN QUYỀN ĐIỀU HƯỚNG CHUẨN XÁC THEO VAI TRÒ ---
+                    if (user.getIdVaiTro() == 1 || user.getIdVaiTro() == 2) {
+                        new NhanSuView(user).setVisible(true); // Admin hoặc Ban Điều hành
+                    } else {
+                        new DashboardView(user).setVisible(true); // Thành viên
+                    }
+                });
+            } catch (Exception ex) {
+                SwingUtilities.invokeLater(() -> {
+                    setCursor(Cursor.getDefaultCursor());
+                    btnDangNhap.setEnabled(true);
+                    JOptionPane.showMessageDialog(this, "Không thể kết nối CSDL: " + ex.getMessage(), "Lỗi kết nối", JOptionPane.ERROR_MESSAGE);
+                });
+                ex.printStackTrace();
+            }
+        }).start();
     }
 
     public static void main(String[] args) {

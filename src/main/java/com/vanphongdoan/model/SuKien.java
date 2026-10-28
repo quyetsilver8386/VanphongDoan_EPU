@@ -55,7 +55,6 @@ public class SuKien {
     public double getKinhPhi() {
         return kinhPhi;
     }
-
     public void setKinhPhi(double kinhPhi) {
         this.kinhPhi = kinhPhi;
     }

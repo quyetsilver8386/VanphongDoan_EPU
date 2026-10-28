@@ -127,3 +127,15 @@ SELECT
     END AS [Tên Vai Trò],
     CASE WHEN TrangThai = 1 THEN N'Hoạt động' ELSE N'Khóa' END AS [Trạng Thái]
 FROM NhanSu;
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'SuKien' AND COLUMN_NAME = 'KinhPhi')
+BEGIN
+    ALTER TABLE SuKien ADD KinhPhi DECIMAL(18,0) DEFAULT 0;
+END
+GO
+
+-- Cập nhật dữ liệu mẫu có kinh phí
+UPDATE SuKien SET KinhPhi = 15000000 WHERE ID_SuKien = 1;
+UPDATE SuKien SET KinhPhi = 4000000 WHERE ID_SuKien = 2;
+SELECT * FROM SuKien;
+SELECT * FROM BanChuyenMon;
+SELECT * FROM CaTruc;

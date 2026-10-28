@@ -2,7 +2,9 @@ package com.vanphongdoan.view.user;
 
 import com.vanphongdoan.model.NhanSu;
 import com.vanphongdoan.view.LoginView;
+
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 public class DashboardView extends JFrame {
@@ -21,26 +23,30 @@ public class DashboardView extends JFrame {
             }
         } catch (Exception ignored) {}
 
-        setTitle("TRANG CHU - THANH VIEN VAN PHONG DOAN");
-        setSize(750, 480);
+        setTitle("TRANG CHỦ - THÀNH VIÊN VĂN PHÒNG ĐOÀN EPU");
+        setSize(900, 540);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
 
-        // Header
-        JPanel panelHeader = new JPanel(new BorderLayout());
-        panelHeader.setBackground(new Color(0, 153, 76)); // Màu xanh lá Đoàn
-        panelHeader.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 20));
+        // --- HEADER ---
+        JPanel panelHeader = new JPanel(new BorderLayout(20, 0));
+        panelHeader.setBackground(new Color(0, 153, 76));
+        panelHeader.setBorder(new EmptyBorder(12, 20, 12, 20));
 
-        JLabel lblTitle = new JLabel("HE THONG QUAN LY VAN PHONG DOAN");
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        JLabel lblTitle = new JLabel("HỆ THỐNG VĂN PHÒNG ĐOÀN EPU");
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
         lblTitle.setForeground(Color.WHITE);
 
         JPanel panelUser = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         panelUser.setOpaque(false);
 
-        JLabel lblWelcome = new JLabel("Xin chào: " + ns.getHoTen() + " (" + ns.getLop() + ")");
-        lblWelcome.setFont(new Font("Segoe UI", Font.ITALIC, 14));
+        String hoTenUser = (currentUser != null && currentUser.getHoTen() != null) ? currentUser.getHoTen() : "Thành viên";
+        String lopUser = (currentUser != null && currentUser.getLop() != null && !currentUser.getLop().isEmpty()) 
+                ? currentUser.getLop() : "Chi đoàn";
+
+        JLabel lblWelcome = new JLabel("Xin chào: " + hoTenUser + " (" + lopUser + ")");
+        lblWelcome.setFont(new Font("Segoe UI", Font.ITALIC, 13));
         lblWelcome.setForeground(Color.WHITE);
 
         JButton btnDangXuat = new JButton("Đăng xuất");
@@ -52,44 +58,33 @@ public class DashboardView extends JFrame {
 
         panelUser.add(lblWelcome);
         panelUser.add(btnDangXuat);
-
         panelHeader.add(lblTitle, BorderLayout.WEST);
         panelHeader.add(panelUser, BorderLayout.EAST);
         add(panelHeader, BorderLayout.NORTH);
 
-        // Center Menu Buttons
+        // --- MENU 4 NÚT ---
         JPanel panelMenu = new JPanel(new GridLayout(2, 2, 20, 20));
-        panelMenu.setBorder(BorderFactory.createEmptyBorder(25, 40, 25, 40));
+        panelMenu.setBorder(new EmptyBorder(30, 40, 30, 40));
 
         JButton btnCaTruc = new JButton("Đăng ký Ca trực");
-        btnCaTruc.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        
         JButton btnSuKien = new JButton("Đăng ký Sự kiện");
-        btnSuKien.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        
         JButton btnTruyenThong = new JButton("Nhiệm vụ Truyền thông");
-        btnTruyenThong.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        
         JButton btnCaNhan = new JButton("Thông tin Cá nhân");
-        btnCaNhan.setFont(new Font("Segoe UI", Font.BOLD, 15));
 
-        // GẮN SỰ KIỆN KHI THÀNH VIÊN BẤM NÚT
-        btnCaTruc.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Mở màn hình Đăng ký ca trực dành cho: " + currentUser.getHoTen());
-            // new DangKyCaTrucView(currentUser).setVisible(true);
-        });
+        Font btnFont = new Font("Segoe UI", Font.BOLD, 16);
+        btnCaTruc.setFont(btnFont); btnSuKien.setFont(btnFont);
+        btnTruyenThong.setFont(btnFont); btnCaNhan.setFont(btnFont);
+        
+        btnCaTruc.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnSuKien.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnTruyenThong.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnCaNhan.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        btnSuKien.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Mở danh sách các sự kiện đang cho phép đăng ký!");
-        });
-
-        btnTruyenThong.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Mở danh sách bài viết/nhiệm vụ được giao!");
-        });
-
-        btnCaNhan.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Thông tin tài khoản: " + currentUser.getHoTen() + " - SĐT: " + currentUser.getSoDienThoai());
-        });
+        // CHỈ ĐỊNH 4 NÚT GỌI ĐẾN 4 FILE CLASS VỪA TẠO
+        btnCaTruc.addActionListener(e -> new DangKyCaTrucDialog(this, currentUser).setVisible(true));
+        btnSuKien.addActionListener(e -> new DangKySuKienDialog(this, currentUser).setVisible(true));
+        btnTruyenThong.addActionListener(e -> new NhiemVuTruyenThongDialog(this, currentUser).setVisible(true));
+        btnCaNhan.addActionListener(e -> new ThongTinCaNhanDialog(this, currentUser).setVisible(true));
 
         panelMenu.add(btnCaTruc);
         panelMenu.add(btnSuKien);

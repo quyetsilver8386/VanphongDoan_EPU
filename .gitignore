@@ -1,1 +1,24 @@
-/target/
+# Thư mục build của Maven
+target/
+*.class
+
+# Cấu hình cá nhân NetBeans
+nbproject/private/
+build/
+dist/
+nbbuild/
+.nb-gradle/
+
+# Cấu hình IDE cá nhân (VS Code, IntelliJ, Eclipse)
+.vscode/
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+
+# File nhật ký và tạm thời hệ điều hành
+*.log
+Thumbs.db
+Desktop.ini
+.DS_Store

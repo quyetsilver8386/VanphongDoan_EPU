@@ -139,3 +139,33 @@ UPDATE SuKien SET KinhPhi = 4000000 WHERE ID_SuKien = 2;
 SELECT * FROM SuKien;
 SELECT * FROM BanChuyenMon;
 SELECT * FROM CaTruc;
+-- Xóa ràng buộc CHECK trên cột BuoiTruc nếu có
+ALTER TABLE CaTruc DROP CONSTRAINT CK_CaTruc_BuoiTruc;
+GO
+
+-- Xóa dữ liệu cũ của bảng CaTruc
+DELETE FROM CaTruc;
+GO
+
+-- Chạy lại câu lệnh thêm dữ liệu mẫu từ Thứ 2 đến Thứ 6
+INSERT INTO CaTruc (BuoiTruc, NgayTruc, Thu, MaSV, HoTen, TrangThai, GhiChu) VALUES
+-- Thứ 2
+('Sáng', '2026-11-02', 'Thứ 2', 'TV01', N'Trần Thị B', N'Đã phân công', N'Trực bàn đón tiếp sinh viên'),
+('Chiều', '2026-11-02', 'Thứ 2', 'TV01', N'Trần Thị B', N'Đã phân công', N'Trực văn phòng Đoàn'),
+
+-- Thứ 3
+('Sáng', '2026-11-03', 'Thứ 3', 'TV01', N'Trần Thị B', N'Đã phân công', N'Hỗ trợ tiếp nhận hồ sơ'),
+('Chiều', '2026-11-03', 'Thứ 3', 'TV01', N'Trần Thị B', N'Đã phân công', N'Trực tổng hợp văn bản'),
+
+-- Thứ 4
+('Sáng', '2026-11-04', 'Thứ 4', NULL, NULL, N'Mở đăng ký', N'Trực cơ sở vật chất'),
+('Chiều', '2026-11-04', 'Thứ 4', NULL, NULL, N'Mở đăng ký', N'Trực tiếp công văn đi đến'),
+
+-- Thứ 5
+('Sáng', '2026-11-05', 'Thứ 5', NULL, NULL, N'Mở đăng ký', N'Hỗ trợ Đoàn phí'),
+('Chiều', '2026-11-05', 'Thứ 5', NULL, NULL, N'Mở đăng ký', N'Trực văn phòng Đoàn'),
+
+-- Thứ 6
+('Sáng', '2026-11-06', 'Thứ 6', NULL, NULL, N'Mở đăng ký', N'Dọn dẹp văn phòng'),
+('Chiều', '2026-11-06', 'Thứ 6', NULL, NULL, N'Mở đăng ký', N'Tổng kết tuần trực');
+UPDATE CaTruc SET TrangThai = N'Mở đăng ký' WHERE TrangThai IS NULL;

@@ -141,7 +141,7 @@ public class LoginView extends JFrame implements ActionListener {
             }
         });
 
-        JLabel lblUserTag = new JLabel("Tên đăng nhập / Mã SV:");
+        JLabel lblUserTag = new JLabel("Tên đăng nhập:");
         lblUserTag.setFont(new Font("Segoe UI", Font.BOLD, 13));
         gbc.gridx = 0; gbc.gridy = 0;
         pnlInputs.add(lblUserTag, gbc);

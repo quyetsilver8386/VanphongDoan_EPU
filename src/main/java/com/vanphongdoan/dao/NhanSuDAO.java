@@ -7,182 +7,27 @@ import com.vanphongdoan.model.PhanQuyen;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
 public class NhanSuDAO {
 
-    // 1. LẤY TOÀN BỘ DANH SÁCH NHÂN SỰ
-    public List<NhanSu> getAllNhanSu() {
-        List<NhanSu> list = new ArrayList<>();
-        String sql = "SELECT * FROM NhanSu";
-
-        try {
-            Connection conn = DatabaseConnection.getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery();
-
-            while (rs.next()) {
-                list.add(mapResultSetToNhanSu(rs));
-            }
-            rs.close();
-            ps.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
-
-    // 2. LẤY DANH SÁCH NHÂN SỰ THEO BAN (Hỗ trợ Integer và int)
-    public List<NhanSu> getNhanSuByBan(Integer idBan) {
-        List<NhanSu> list = new ArrayList<>();
-        if (idBan == null || idBan == 0) {
-            return getAllNhanSu();
-        }
-        String sql = "SELECT * FROM NhanSu WHERE ID_Ban = ?";
-        try {
-            Connection conn = DatabaseConnection.getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setInt(1, idBan);
-            ResultSet rs = ps.executeQuery();
-
-            while (rs.next()) {
-                list.add(mapResultSetToNhanSu(rs));
-            }
-            rs.close();
-            ps.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
-
-    // 3. THÊM MỚI NHÂN SỰ
-    public boolean insert(NhanSu ns) {
-        String sql = "INSERT INTO NhanSu (MaSV, MatKhau, HoTen, Lop, SoDienThoai, ID_VaiTro, ID_Ban, TrangThai) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        try {
-            Connection conn = DatabaseConnection.getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql);
-
-            ps.setString(1, ns.getMaSV());
-            ps.setString(2, (ns.getMatKhau() == null || ns.getMatKhau().isEmpty()) ? "123456" : ns.getMatKhau());
-            ps.setString(3, ns.getHoTen());
-            ps.setString(4, ns.getLop());
-            ps.setString(5, ns.getSoDienThoai());
-            ps.setInt(6, ns.getIdVaiTro());
-
-            if (ns.getIdBan() == null || ns.getIdBan() <= 0) {
-                ps.setNull(7, Types.INTEGER);
-            } else {
-                ps.setInt(7, ns.getIdBan());
-            }
-
-            ps.setBoolean(8, ns.isTrangThai());
-
-            int kq = ps.executeUpdate();
-            ps.close();
-            return kq > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    public boolean insertNhanSu(NhanSu ns) {
-        return insert(ns);
-    }
-
-    // 4. CẬP NHẬT NHÂN SỰ THEO MASV
-    public boolean update(NhanSu ns) {
-        String sql = "UPDATE NhanSu SET MatKhau = ?, HoTen = ?, Lop = ?, SoDienThoai = ?, " +
-                     "ID_VaiTro = ?, ID_Ban = ?, TrangThai = ? WHERE MaSV = ?";
-        try {
-            Connection conn = DatabaseConnection.getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql);
-
-            ps.setString(1, ns.getMatKhau());
-            ps.setString(2, ns.getHoTen());
-            ps.setString(3, ns.getLop());
-            ps.setString(4, ns.getSoDienThoai());
-            ps.setInt(5, ns.getIdVaiTro());
-
-            if (ns.getIdBan() == null || ns.getIdBan() <= 0) {
-                ps.setNull(6, Types.INTEGER);
-            } else {
-                ps.setInt(6, ns.getIdBan());
-            }
-
-            ps.setBoolean(7, ns.isTrangThai());
-            ps.setString(8, ns.getMaSV());
-
-            int kq = ps.executeUpdate();
-            ps.close();
-            return kq > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    public boolean updateNhanSu(NhanSu ns) {
-        return update(ns);
-    }
-
-    // 5. XÓA NHÂN SỰ THEO MASV
-    public boolean delete(String maSV) {
-        String sql = "DELETE FROM NhanSu WHERE MaSV = ?";
-        try {
-            Connection conn = DatabaseConnection.getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setString(1, maSV);
-
-            int kq = ps.executeUpdate();
-            ps.close();
-            return kq > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    // 6. TÌM KIẾM NHÂN SỰ
-    public List<NhanSu> search(String keyword) {
-        List<NhanSu> list = new ArrayList<>();
-        String sql = "SELECT * FROM NhanSu WHERE MaSV LIKE ? OR HoTen LIKE ?";
-        try {
-            Connection conn = DatabaseConnection.getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql);
-            String searchPattern = "%" + keyword + "%";
-            ps.setString(1, searchPattern);
-            ps.setString(2, searchPattern);
-
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                list.add(mapResultSetToNhanSu(rs));
-            }
-            rs.close();
-            ps.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return list;
-    }
-
-    // 7. KIỂM TRA ĐĂNG NHẬP (Dùng MaSV làm tài khoản)
-    public NhanSu checkLogin(String username, String password) {
-        String sql = "SELECT * FROM NhanSu WHERE RTRIM(LTRIM(MaSV)) = ? AND RTRIM(LTRIM(MatKhau)) = ? AND TrangThai = 1";
-        Connection conn = DatabaseConnection.getConnection();
-        if (conn == null) return null;
-
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, username.trim());
-            ps.setString(2, password.trim());
+    /**
+     * 1. Kiểm tra đăng nhập tài khoản
+     */
+    public NhanSu checkLogin(String tenDangNhap, String matKhau) {
+        String sql = "SELECT ns.*, b.TenBan FROM NhanSu ns "
+                   + "LEFT JOIN BanChuyenMon b ON ns.ID_Ban = b.ID_Ban "
+                   + "WHERE ns.MaSV = ? AND ns.MatKhau = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, tenDangNhap);
+            ps.setString(2, matKhau);
 
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return mapResultSetToNhanSu(rs);
+                    return mapNhanSuFromResultSet(rs);
                 }
             }
         } catch (Exception e) {
@@ -191,119 +36,250 @@ public class NhanSuDAO {
         return null;
     }
 
-    // 8. LẤY THÔNG TIN PHÂN QUYỀN
-    public PhanQuyen getPhanQuyenByUsername(String username) {
-        String sql = "SELECT * FROM PhanQuyenBanDieuHanh WHERE TenDangNhap = ? OR MaSV = ?";
-        try {
-            Connection conn = DatabaseConnection.getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setString(1, username);
-            ps.setString(2, username);
+    /**
+     * 2. Đổi mật khẩu cá nhân
+     */
+    public boolean doiMatKhau(String maSV, String matKhauCu, String matKhauMoi) {
+        String sql = "UPDATE NhanSu SET MatKhau = ? WHERE MaSV = ? AND MatKhau = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                PhanQuyen pq = new PhanQuyen();
-                try { pq.setTenDangNhap(rs.getString(1)); } catch (Exception ignored) {}
-                try { pq.setQuyenDoiNgoai(rs.getBoolean("QuyenDoiNgoai")); } catch (Exception ignored) {}
-                try { pq.setQuyenSuKien(rs.getBoolean("QuyenSuKien")); } catch (Exception ignored) {}
-                try { pq.setQuyenTruyenThong(rs.getBoolean("QuyenTruyenThong")); } catch (Exception ignored) {}
-                try { pq.setQuyenXuatBaoCao(rs.getBoolean("QuyenXuatBaoCao")); } catch (Exception ignored) {}
-                rs.close();
-                ps.close();
-                return pq;
-            }
-            rs.close();
-            ps.close();
-        } catch (Exception e) {
-            // Trường hợp chưa dùng bảng phân quyền nâng cao
-        }
-        return null;
-    }
-
-    // 9. LƯU THÔNG TIN PHÂN QUYỀN
-    public boolean savePhanQuyen(PhanQuyen pq) {
-        if (pq == null) return false;
-        String sql = "IF EXISTS (SELECT 1 FROM PhanQuyenBanDieuHanh WHERE TenDangNhap = ?) " +
-                     "    UPDATE PhanQuyenBanDieuHanh SET QuyenDoiNgoai = ?, QuyenSuKien = ?, QuyenTruyenThong = ?, QuyenXuatBaoCao = ? WHERE TenDangNhap = ? " +
-                     "ELSE " +
-                     "    INSERT INTO PhanQuyenBanDieuHanh (TenDangNhap, QuyenDoiNgoai, QuyenSuKien, QuyenTruyenThong, QuyenXuatBaoCao) VALUES (?, ?, ?, ?, ?)";
-        try {
-            Connection conn = DatabaseConnection.getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql);
-            String user = pq.getTenDangNhap();
-            ps.setString(1, user);
-            ps.setBoolean(2, pq.isQuyenDoiNgoai());
-            ps.setBoolean(3, pq.isQuyenSuKien());
-            ps.setBoolean(4, pq.isQuyenTruyenThong());
-            ps.setBoolean(5, pq.isQuyenXuatBaoCao());
-            ps.setString(6, user);
-
-            ps.setString(7, user);
-            ps.setBoolean(8, pq.isQuyenDoiNgoai());
-            ps.setBoolean(9, pq.isQuyenSuKien());
-            ps.setBoolean(10, pq.isQuyenTruyenThong());
-            ps.setBoolean(11, pq.isQuyenXuatBaoCao());
-
-            int kq = ps.executeUpdate();
-            ps.close();
-            return kq > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    // 10. ĐỔI TRẠNG THÁI TÀI KHOẢN
-    public boolean toggleTrangThai(String maSV, boolean trangThaiMoi) {
-        String sql = "UPDATE NhanSu SET TrangThai = ? WHERE MaSV = ?";
-        try {
-            Connection conn = DatabaseConnection.getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setBoolean(1, trangThaiMoi);
-            ps.setString(2, maSV);
-
-            int kq = ps.executeUpdate();
-            ps.close();
-            return kq > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    // 11. RESET MẬT KHẨU
-    public boolean resetMatKhau(String maSV, String matKhauMoi) {
-        String sql = "UPDATE NhanSu SET MatKhau = ? WHERE MaSV = ?";
-        try {
-            Connection conn = DatabaseConnection.getConnection();
-            PreparedStatement ps = conn.prepareStatement(sql);
             ps.setString(1, matKhauMoi);
             ps.setString(2, maSV);
+            ps.setString(3, matKhauCu);
 
-            int kq = ps.executeUpdate();
-            ps.close();
-            return kq > 0;
+            return ps.executeUpdate() > 0;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
     }
 
-    // HÀM CHUYỂN ĐỔI AN TOÀN TỪ RESULTSET SANG MODEL
-    private NhanSu mapResultSetToNhanSu(ResultSet rs) throws Exception {
+    /**
+     * 3. Lấy danh sách toàn bộ nhân sự
+     */
+    public List<NhanSu> getAllNhanSu() {
+        List<NhanSu> list = new ArrayList<>();
+        String sql = "SELECT ns.*, b.TenBan FROM NhanSu ns "
+                   + "LEFT JOIN BanChuyenMon b ON ns.ID_Ban = b.ID_Ban";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                list.add(mapNhanSuFromResultSet(rs));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    /**
+     * 4. Lấy danh sách nhân sự lọc theo Ban Chuyên Môn
+     */
+    public List<NhanSu> getNhanSuByBan(Integer idBan) {
+        if (idBan == null || idBan <= 0) {
+            return getAllNhanSu();
+        }
+        List<NhanSu> list = new ArrayList<>();
+        String sql = "SELECT ns.*, b.TenBan FROM NhanSu ns "
+                   + "LEFT JOIN BanChuyenMon b ON ns.ID_Ban = b.ID_Ban WHERE ns.ID_Ban = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setInt(1, idBan);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapNhanSuFromResultSet(rs));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    /**
+     * 5. Thêm mới nhân sự (Admin)
+     */
+    public boolean insertNhanSu(NhanSu ns) {
+        String sql = "INSERT INTO NhanSu (MaSV, MatKhau, HoTen, Lop, SoDienThoai, TrangThai, ID_VaiTro, ID_Ban) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, ns.getMaSV());
+            ps.setString(2, (ns.getMatKhau() != null && !ns.getMatKhau().isEmpty()) ? ns.getMatKhau() : "123456");
+            ps.setString(3, ns.getHoTen());
+            ps.setString(4, ns.getLop());
+            ps.setString(5, ns.getSoDienThoai());
+            ps.setBoolean(6, ns.isTrangThai());
+            ps.setInt(7, ns.getIdVaiTro());
+
+            if (ns.getIdBan() > 0) {
+                ps.setInt(8, ns.getIdBan());
+            } else {
+                ps.setNull(8, java.sql.Types.INTEGER);
+            }
+
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 6. Cập nhật thông tin nhân sự (Admin)
+     */
+    public boolean updateNhanSu(NhanSu ns) {
+        String sql = "UPDATE NhanSu SET HoTen = ?, Lop = ?, SoDienThoai = ?, ID_VaiTro = ?, ID_Ban = ? WHERE MaSV = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, ns.getHoTen());
+            ps.setString(2, ns.getLop());
+            ps.setString(3, ns.getSoDienThoai());
+            ps.setInt(4, ns.getIdVaiTro());
+
+            if (ns.getIdBan() > 0) {
+                ps.setInt(5, ns.getIdBan());
+            } else {
+                ps.setNull(5, java.sql.Types.INTEGER);
+            }
+
+            ps.setString(6, ns.getMaSV());
+
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 7. Khóa / Mở khóa tài khoản nhân sự
+     */
+    public boolean toggleTrangThai(String maSV, boolean status) {
+        String sql = "UPDATE NhanSu SET TrangThai = ? WHERE MaSV = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setBoolean(1, status);
+            ps.setString(2, maSV);
+
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 8. Đặt lại mật khẩu về mặc định
+     */
+    public boolean resetMatKhau(String maSV, String newPass) {
+        String sql = "UPDATE NhanSu SET MatKhau = ? WHERE MaSV = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, (newPass != null && !newPass.isEmpty()) ? newPass : "123456");
+            ps.setString(2, maSV);
+
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * 9. Lấy thông tin phân quyền Ban Điều Hành
+     */
+    public PhanQuyen getPhanQuyenByUsername(String username) {
+        String sql = "SELECT * FROM PhanQuyenBanDieuHanh WHERE TenDangNhap = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, username);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    PhanQuyen pq = new PhanQuyen();
+                    pq.setTenDangNhap(rs.getString("TenDangNhap"));
+                    pq.setQuyenDoiNgoai(rs.getBoolean("QuyenDoiNgoai"));
+                    pq.setQuyenSuKien(rs.getBoolean("QuyenSuKien"));
+                    pq.setQuyenTruyenThong(rs.getBoolean("QuyenTruyenThong"));
+                    pq.setQuyenXuatBaoCao(rs.getBoolean("QuyenXuatBaoCao"));
+                    return pq;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        // Trả về đối tượng phân quyền mặc định nếu chưa có
+        return new PhanQuyen(username, false, false, false, false);
+    }
+
+    /**
+     * 10. Lưu / Cập nhật bảng phân quyền Ban Điều Hành
+     */
+    public boolean savePhanQuyen(PhanQuyen pq) {
+        String checkSql = "SELECT COUNT(*) FROM PhanQuyenBanDieuHanh WHERE TenDangNhap = ?";
+        String insertSql = "INSERT INTO PhanQuyenBanDieuHanh (TenDangNhap, QuyenDoiNgoai, QuyenSuKien, QuyenTruyenThong, QuyenXuatBaoCao) VALUES (?, ?, ?, ?, ?)";
+        String updateSql = "UPDATE PhanQuyenBanDieuHanh SET QuyenDoiNgoai = ?, QuyenSuKien = ?, QuyenTruyenThong = ?, QuyenXuatBaoCao = ? WHERE TenDangNhap = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection()) {
+            boolean exists = false;
+            try (PreparedStatement checkPs = conn.prepareStatement(checkSql)) {
+                checkPs.setString(1, pq.getTenDangNhap());
+                try (ResultSet rs = checkPs.executeQuery()) {
+                    if (rs.next() && rs.getInt(1) > 0) {
+                        exists = true;
+                    }
+                }
+            }
+
+            if (exists) {
+                try (PreparedStatement ps = conn.prepareStatement(updateSql)) {
+                    ps.setBoolean(1, pq.isQuyenDoiNgoai());
+                    ps.setBoolean(2, pq.isQuyenSuKien());
+                    ps.setBoolean(3, pq.isQuyenTruyenThong());
+                    ps.setBoolean(4, pq.isQuyenXuatBaoCao());
+                    ps.setString(5, pq.getTenDangNhap());
+                    return ps.executeUpdate() > 0;
+                }
+            } else {
+                try (PreparedStatement ps = conn.prepareStatement(insertSql)) {
+                    ps.setString(1, pq.getTenDangNhap());
+                    ps.setBoolean(2, pq.isQuyenDoiNgoai());
+                    ps.setBoolean(3, pq.isQuyenSuKien());
+                    ps.setBoolean(4, pq.isQuyenTruyenThong());
+                    ps.setBoolean(5, pq.isQuyenXuatBaoCao());
+                    return ps.executeUpdate() > 0;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Helper map ResultSet sang Object NhanSu
+     */
+    private NhanSu mapNhanSuFromResultSet(ResultSet rs) throws Exception {
         NhanSu ns = new NhanSu();
         ns.setMaSV(rs.getString("MaSV"));
-        try { ns.setTenDangNhap(rs.getString("MaSV")); } catch (Exception ignored) {}
         ns.setMatKhau(rs.getString("MatKhau"));
         ns.setHoTen(rs.getString("HoTen"));
         ns.setLop(rs.getString("Lop"));
         ns.setSoDienThoai(rs.getString("SoDienThoai"));
-        ns.setIdVaiTro(rs.getInt("ID_VaiTro"));
-
-        int idBan = rs.getInt("ID_Ban");
-        ns.setIdBan(rs.wasNull() ? null : idBan);
-
         ns.setTrangThai(rs.getBoolean("TrangThai"));
+        ns.setIdVaiTro(rs.getInt("ID_VaiTro"));
+        ns.setIdBan(rs.getInt("ID_Ban"));
+        try {
+            ns.setTenBan(rs.getString("TenBan"));
+        } catch (Exception ignored) {}
         return ns;
     }
 }

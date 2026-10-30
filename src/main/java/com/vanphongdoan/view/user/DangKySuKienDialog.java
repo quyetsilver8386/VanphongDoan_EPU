@@ -69,14 +69,14 @@ public class DangKySuKienDialog extends JDialog {
 
         loadDataToGrid();
 
-        // --- 3. FOOTER NÚT BẤM ---
+        // --- 3. FOOTER NÚT BẤM (ĐÃ NÂNG KÍCH THƯỚC NÚT CAM LÊN 250PX CHỐNG MẤT CHỮ) ---
         JPanel pnlBottom = new JPanel(new FlowLayout(FlowLayout.RIGHT, 18, 15));
 
-        JButton btnHuyDangKy = new JButton("Gửi yêu cầu xin hủy ca");
+        JButton btnHuyDangKy = new JButton("Gửi yêu cầu xin hủy đăng ký");
         btnHuyDangKy.setBackground(new Color(204, 102, 0));
         btnHuyDangKy.setForeground(Color.WHITE);
         btnHuyDangKy.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        btnHuyDangKy.setPreferredSize(new Dimension(210, 38));
+        btnHuyDangKy.setPreferredSize(new Dimension(250, 38)); // Độ rộng 250px giúp hiện đủ chữ
         btnHuyDangKy.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         JButton btnDangKy = new JButton("Đăng ký tham gia Sự kiện");
@@ -99,12 +99,11 @@ public class DangKySuKienDialog extends JDialog {
                 return;
             }
 
-            // TÁCH CHUỖI VỊ TRÍ ĐỘNG DO ADMIN THIẾT LẬP DÀNH RIÊNG CHO SỰ KIỆN NÀY
             String rawViTri = sk.getDanhSachViTri();
             if (rawViTri == null || rawViTri.trim().isEmpty()) {
-                rawViTri = "MC, Lễ tân, Chạy sự kiện, Hậu cần"; // Mặc định nếu trống
+                rawViTri = "MC, Lễ tân, Chạy sự kiện, Hậu cần";
             }
-            String[] viTriOptions = rawViTri.split("\\s*,\\s*"); // Tách dấu phẩy và tự động xóa khoảng trắng thừa
+            String[] viTriOptions = rawViTri.split("\\s*,\\s*");
 
             String selectedViTri = (String) JOptionPane.showInputDialog(
                     this,
@@ -125,7 +124,7 @@ public class DangKySuKienDialog extends JDialog {
                 }
             }
         });
-        // Xử lý gửi yêu cầu Xin Hủy (Mở XinHuySuKienDialog)
+
         btnHuyDangKy.addActionListener(e -> {
             int row = tableSuKien.getSelectedRow();
             if (row == -1) {
@@ -171,12 +170,11 @@ public class DangKySuKienDialog extends JDialog {
         for (SuKien sk : listSuKienCurrent) {
             String trangThaiHtml;
             if ("Chờ hủy".equals(sk.getTrangThaiDangKy())) {
-                // Hiển thị trạng thái đang chờ BĐH duyệt màu cam & chống ngắt dòng vỡ chữ
                 trangThaiHtml = "<html><center><font size='4' color='#d97706'><b>[Đang chờ<br>BĐH&nbsp;duyệt&nbsp;hủy]</b></font><br>"
-                              + "<font size='3' color='#333333'>📍 Vị trí: <b>" + sk.getViTriDangKy() + "</b></font></center></html>";
+                              + "<font size='3' color='#333333'>Vị trí: <b>" + sk.getViTriDangKy() + "</b></font></center></html>";
             } else if (sk.getViTriDangKy() != null && !sk.getViTriDangKy().trim().isEmpty()) {
                 trangThaiHtml = "<html><center><font size='4' color='#008000'><b>[Đã đăng ký]</b></font><br>"
-                              + "<font size='3' color='#333333'>📍 Vị trí: <b>" + sk.getViTriDangKy() + "</b></font></center></html>";
+                              + "<font size='3' color='#333333'>Vị trí: <b>" + sk.getViTriDangKy() + "</b></font></center></html>";
             } else {
                 trangThaiHtml = "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font><br>"
                               + "<font size='2.5' color='#666666'>" + (sk.getTrangThai() != null ? sk.getTrangThai() : "Sắp diễn ra") + "</font></center></html>";

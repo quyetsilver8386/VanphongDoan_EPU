@@ -273,3 +273,4 @@ INSERT INTO NhiemVuTruyenThong (TenNhiemVu, MaSV_DuocGiao, HanChot, TrangThai) V
 (N'Viết bài Fanpage giới thiệu Sự kiện Chào Tân Sinh Viên', 'TV01', '2026-11-03', N'Đang thực hiện'),
 (N'Thiết kế Banner Giải Bóng Đá Cúp Thanh Niên', 'TV01', '2026-11-10', N'Chờ duyệt');
 GO
+

@@ -173,7 +173,7 @@ public class DangKyCaTrucDialog extends JDialog {
                 targetCa.setTrangThai("Chờ hủy");
                 
                 String oldGhiChu = targetCa.getGhiChu() != null ? targetCa.getGhiChu() : "";
-                String minhChung = (tenAnh == null || tenAnh.isEmpty()) ? "" : " | 📎 Ảnh đính kèm: " + tenAnh;
+                String minhChung = (tenAnh == null || tenAnh.isEmpty()) ? "" : " | Ảnh đính kèm: " + tenAnh;
                 targetCa.setGhiChu(oldGhiChu + " [Xin hủy: " + lyDo + minhChung + "]");
 
                 if (caTrucDAO.update(targetCa)) {
@@ -197,10 +197,19 @@ public class DangKyCaTrucDialog extends JDialog {
 
         List<CaTruc> list = caTrucDAO.getAllCaTruc();
 
-        String[] rowSang = {"<html><center><font size='4' color='#003366'><b>☀ SÁNG</b></font><br><font size='2.5' color='#555555'><i>(8h - 11h)</i></font></center></html>", 
-                            "<html><font color='gray'>Chưa mở</font></html>", "<html><font color='gray'>Chưa mở</font></html>", "<html><font color='gray'>Chưa mở</font></html>", "<html><font color='gray'>Chưa mở</font></html>", "<html><font color='gray'>Chưa mở</font></html>"};
-        String[] rowChieu = {"<html><center><font size='4' color='#993300'><b>🌙 CHIỀU</b></font><br><font size='2.5' color='#555555'><i>(14h - 17h)</i></font></center></html>", 
-                             "<html><font color='gray'>Chưa mở</font></html>", "<html><font color='gray'>Chưa mở</font></html>", "<html><font color='gray'>Chưa mở</font></html>", "<html><font color='gray'>Chưa mở</font></html>", "<html><font color='gray'>Chưa mở</font></html>"};
+        String[] rowSang = {"<html><center><font size='4' color='#003366'><b>SÁNG</b></font><br><font size='2.5' color='#555555'><i>(8h - 11h)</i></font></center></html>", 
+                            "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>", 
+                            "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>", 
+                            "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>", 
+                            "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>", 
+                            "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>"};
+
+        String[] rowChieu = {"<html><center><font size='4' color='#993300'><b>CHIỀU</b></font><br><font size='2.5' color='#555555'><i>(14h - 17h)</i></font></center></html>", 
+                             "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>", 
+                             "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>", 
+                             "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>", 
+                             "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>", 
+                             "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>"};
 
         for (CaTruc ct : list) {
             int colIndex = getColumnIndexByThu(ct.getThu());
@@ -225,7 +234,6 @@ public class DangKyCaTrucDialog extends JDialog {
         String trangThai = ct.getTrangThai() != null ? ct.getTrangThai() : "";
         String maSVNhan = ct.getMaSV() != null ? ct.getMaSV().trim() : "";
         String hoTenNhan = ct.getHoTen() != null ? ct.getHoTen().trim() : "";
-        String ghiChu = ct.getGhiChu() != null ? ct.getGhiChu() : "Trực văn phòng";
 
         if (hoTenNhan.contains("(")) {
             hoTenNhan = hoTenNhan.substring(0, hoTenNhan.indexOf("(")).trim();
@@ -233,16 +241,15 @@ public class DangKyCaTrucDialog extends JDialog {
 
         if ("Chờ hủy".equalsIgnoreCase(trangThai) && maSVNhan.equalsIgnoreCase(currentUser.getMaSV().trim())) {
             return "<html><center><font size='4' color='#cc6600'><b>[Đang chờ<br>BĐH&nbsp;duyệt&nbsp;hủy]</b></font><br><br>"
-                 + "<font size='3' color='#333333'>👤 " + hoTenNhan + "</font></center></html>";
+                 + "<font size='3' color='#333333'>" + hoTenNhan + "</font></center></html>";
         } else if (!maSVNhan.isEmpty() && maSVNhan.equalsIgnoreCase(currentUser.getMaSV().trim())) {
             return "<html><center><font size='4' color='#008000'><b>[Đã đăng ký bởi bạn]</b></font><br><br>"
-                 + "<font size='3' color='#333333'>👤 " + hoTenNhan + "</font></center></html>";
+                 + "<font size='3' color='#333333'>" + hoTenNhan + "</font></center></html>";
         } else if ("Đã phân công".equalsIgnoreCase(trangThai) || !maSVNhan.isEmpty()) {
             return "<html><center><font size='4' color='#cc0000'><b>[Đã có người đăng ký]</b></font><br><br>"
-                 + "<font size='3' color='#333333'>👤 " + hoTenNhan + "</font></center></html>";
+                 + "<font size='3' color='#333333'>" + hoTenNhan + "</font></center></html>";
         } else {
-            return "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font><br><br>"
-                 + "<font size='3' color='#0055a4'><b>📝 " + ghiChu + "</b></font></center></html>";
+            return "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>";
         }
     }
 

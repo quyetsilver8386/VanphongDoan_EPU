@@ -257,10 +257,11 @@ public class LoginView extends JFrame implements ActionListener {
                     JOptionPane.showMessageDialog(this, "Đăng nhập thành công!\nXin chào: " + user.getHoTen());
                     this.dispose();
 
+                    // PHÂN QUYỀN ĐIỀU HƯỚNG CHUẨN XÁC THEO VAI TRÒ
                     if (user.getIdVaiTro() == 1 || user.getIdVaiTro() == 2) {
-                        new NhanSuView(user).setVisible(true);
+                        new NhanSuView(user).setVisible(true); // Admin hoặc Ban Điều hành
                     } else {
-                        new DashboardView(user).setVisible(true);
+                        new DashboardView(user).setVisible(true); // Thành viên
                     }
                 });
             } catch (Exception ex) {

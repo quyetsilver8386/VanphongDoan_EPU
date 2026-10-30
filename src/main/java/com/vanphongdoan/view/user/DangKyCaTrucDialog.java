@@ -70,7 +70,7 @@ public class DangKyCaTrucDialog extends JDialog {
 
         loadDataToGrid();
 
-        // --- 3. FOOTER NÚT BẤM TO RÕ ---
+        // --- 3. FOOTER NÚT BẤM ---
         JPanel pnlBottom = new JPanel(new FlowLayout(FlowLayout.RIGHT, 18, 15));
         
         JButton btnXinHuy = new JButton("Gửi yêu cầu xin hủy ca");
@@ -110,54 +110,6 @@ public class DangKyCaTrucDialog extends JDialog {
             }
 
             if (cellValue.contains("[Đã đăng ký bởi bạn]")) {
-
-    public DangKyCaTrucDialog(JFrame parent, NhanSu currentUser) {
-        super(parent, "ĐĂNG KÝ CA TRỰC VĂN PHÒNG ĐOÀN", true);
-        this.currentUser = currentUser;
-        setSize(760, 440);
-        setLocationRelativeTo(parent);
-        setLayout(new BorderLayout(10, 10));
-
-        String[] cols = {"Mã Ca", "Buổi trực", "Ngày trực", "Thứ", "Trạng thái", "Ghi chú"};
-        DefaultTableModel model = new DefaultTableModel(cols, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
-        };
-        JTable table = new JTable(model);
-        table.setRowHeight(25);
-
-        // Load dữ liệu
-        List<CaTruc> list = caTrucDAO.getAllCaTruc();
-        for (CaTruc ct : list) {
-            boolean isMine = currentUser.getMaSV().equalsIgnoreCase(ct.getMaSV());
-            if ("Mở đăng ký".equalsIgnoreCase(ct.getTrangThai()) || isMine) {
-                model.addRow(new Object[]{
-                    ct.getIdCa(), ct.getBuoiTruc(), ct.getNgayTruc(), ct.getThu(),
-                    isMine ? "Đã đăng ký" : ct.getTrangThai(), ct.getGhiChu() != null ? ct.getGhiChu() : ""
-                });
-            }
-        }
-
-        JPanel pnlBottom = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 10));
-        JButton btnDangKy = new JButton("Xác nhận Đăng ký ca chọn");
-        btnDangKy.setBackground(new Color(0, 102, 204));
-        btnDangKy.setForeground(Color.WHITE);
-        btnDangKy.setFont(new Font("Segoe UI", Font.BOLD, 13));
-
-        btnDangKy.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row == -1) {
-                JOptionPane.showMessageDialog(this, "Vui lòng chọn một ca trực từ danh sách!", "Thông báo", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            int idCa = Integer.parseInt(model.getValueAt(row, 0).toString());
-            String buoiTruc = model.getValueAt(row, 1).toString();
-            String ngayTruc = model.getValueAt(row, 2).toString();
-            String thu = model.getValueAt(row, 3).toString();
-            String status = model.getValueAt(row, 4).toString();
-            String ghiChu = model.getValueAt(row, 5).toString();
-
-            if ("Đã đăng ký".equals(status)) {
                 JOptionPane.showMessageDialog(this, "Bạn đã đăng ký ca trực này rồi!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
                 return;
             }
@@ -221,7 +173,7 @@ public class DangKyCaTrucDialog extends JDialog {
                 targetCa.setTrangThai("Chờ hủy");
                 
                 String oldGhiChu = targetCa.getGhiChu() != null ? targetCa.getGhiChu() : "";
-                String minhChung = tenAnh.isEmpty() ? "" : " | 📎 Ảnh đính kèm: " + tenAnh;
+                String minhChung = (tenAnh == null || tenAnh.isEmpty()) ? "" : " | 📎 Ảnh đính kèm: " + tenAnh;
                 targetCa.setGhiChu(oldGhiChu + " [Xin hủy: " + lyDo + minhChung + "]");
 
                 if (caTrucDAO.update(targetCa)) {
@@ -245,7 +197,6 @@ public class DangKyCaTrucDialog extends JDialog {
 
         List<CaTruc> list = caTrucDAO.getAllCaTruc();
 
-        // Thêm khung giờ Sáng (8h - 11h) và Chiều (14h - 17h) vào cột đầu tiên
         String[] rowSang = {"<html><center><font size='4' color='#003366'><b>☀ SÁNG</b></font><br><font size='2.5' color='#555555'><i>(8h - 11h)</i></font></center></html>", 
                             "<html><font color='gray'>Chưa mở</font></html>", "<html><font color='gray'>Chưa mở</font></html>", "<html><font color='gray'>Chưa mở</font></html>", "<html><font color='gray'>Chưa mở</font></html>", "<html><font color='gray'>Chưa mở</font></html>"};
         String[] rowChieu = {"<html><center><font size='4' color='#993300'><b>🌙 CHIỀU</b></font><br><font size='2.5' color='#555555'><i>(14h - 17h)</i></font></center></html>", 
@@ -316,46 +267,21 @@ public class DangKyCaTrucDialog extends JDialog {
             default: return "";
         }
     }
-    // --- HÀM MAIN TẠM ĐỂ TEST TRỰC TIẾP GIAO DIỆN ---
-// --- HÀM MAIN TẠM ĐỂ TEST TRỰC TIẾP GIAO DIỆN ---
+
     public static void main(String[] args) {
-        // Thiết lập giao diện theo hệ thống cho đẹp
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception ignored) {}
 
         SwingUtilities.invokeLater(() -> {
-            JFrame dummyFrame = new JFrame(); // Khung cha giả lập
-            NhanSu dummyUser = new NhanSu();  // Tạo user giả lập test
+            JFrame dummyFrame = new JFrame();
+            NhanSu dummyUser = new NhanSu();
             dummyUser.setMaSV("TV01");
             dummyUser.setHoTen("Trần Thị B");
             
             DangKyCaTrucDialog dialog = new DangKyCaTrucDialog(dummyFrame, dummyUser);
             dialog.setVisible(true);
-            System.exit(0); // Thoát chương trình khi đóng dialog
+            System.exit(0);
         });
-    }
-}
-            CaTruc ct = new CaTruc();
-            ct.setIdCa(idCa);
-            ct.setBuoiTruc(buoiTruc);
-            ct.setNgayTruc(ngayTruc);
-            ct.setThu(thu);
-            ct.setMaSV(currentUser.getMaSV());
-            ct.setHoTen(currentUser.getHoTen());
-            ct.setTrangThai("Đã phân công");
-            ct.setGhiChu(ghiChu);
-
-            if (caTrucDAO.update(ct)) {
-                JOptionPane.showMessageDialog(this, "Đăng ký ca trực thành công!");
-                this.dispose();
-            } else {
-                JOptionPane.showMessageDialog(this, "Đăng ký thất bại! Vui lòng thử lại sau.", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
-        pnlBottom.add(btnDangKy);
-        add(new JScrollPane(table), BorderLayout.CENTER);
-        add(pnlBottom, BorderLayout.SOUTH);
     }
 }

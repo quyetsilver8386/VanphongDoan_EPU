@@ -141,7 +141,7 @@ public class LoginView extends JFrame implements ActionListener {
             }
         });
 
-        JLabel lblUserTag = new JLabel("Tên đăng nhập:");
+        JLabel lblUserTag = new JLabel("Tên đăng nhập / Mã SV:");
         lblUserTag.setFont(new Font("Segoe UI", Font.BOLD, 13));
         gbc.gridx = 0; gbc.gridy = 0;
         pnlInputs.add(lblUserTag, gbc);
@@ -262,6 +262,10 @@ public class LoginView extends JFrame implements ActionListener {
                         new NhanSuView(user).setVisible(true); // Admin hoặc Ban Điều hành
                     } else {
                         new DashboardView(user).setVisible(true); // Thành viên
+                    if (user.getIdVaiTro() == 1 || user.getIdVaiTro() == 2) {
+                        new NhanSuView(user).setVisible(true);
+                    } else {
+                        new DashboardView(user).setVisible(true);
                     }
                 });
             } catch (Exception ex) {

@@ -1,6 +1,7 @@
 package com.vanphongdoan.view.user;
 
 import com.vanphongdoan.model.NhanSu;
+import com.vanphongdoan.view.LoginView;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -13,30 +14,54 @@ public class DashboardView extends JFrame {
         this.currentUser = currentUser;
         
         setTitle("HỆ THỐNG QUẢN LÝ VĂN PHÒNG ĐOÀN - TRANG CHỦ");
-        setSize(920, 600);
+        setSize(950, 600);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // --- 1. HEADER THANH ĐIỀU HÀNH ---
+        // --- 1. HEADER THANH ĐIỀU HÀNH (ĐÃ THÊM NÚT ĐĂNG XUẤT) ---
         JPanel pnlHeader = new JPanel(new BorderLayout());
         pnlHeader.setBackground(new Color(13, 110, 253));
-        pnlHeader.setBorder(new EmptyBorder(18, 25, 18, 25));
+        pnlHeader.setBorder(new EmptyBorder(12, 25, 12, 25));
 
         JLabel lblTitle = new JLabel("BẢNG ĐIỀU HÀNH THÀNH VIÊN ĐOÀN");
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 20));
         lblTitle.setForeground(Color.WHITE);
+
+        // Panel góc phải chứa tên người dùng & Nút Đăng xuất
+        JPanel pnlRightHeader = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
+        pnlRightHeader.setOpaque(false);
 
         String nameDisplay = (currentUser != null && currentUser.getHoTen() != null) ? currentUser.getHoTen() : "Thành viên";
         JLabel lblUser = new JLabel("Xin chào, " + nameDisplay + "!");
         lblUser.setFont(new Font("Segoe UI", Font.BOLD, 14));
         lblUser.setForeground(Color.WHITE);
 
+        JButton btnDangXuat = new JButton("Đăng xuất");
+        btnDangXuat.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnDangXuat.setBackground(new Color(220, 53, 69)); // Màu đỏ nổi bật
+        btnDangXuat.setForeground(Color.WHITE);
+        btnDangXuat.setFocusPainted(false);
+        btnDangXuat.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnDangXuat.setPreferredSize(new Dimension(100, 32));
+
+        // Sự kiện Đăng xuất quay về LoginView
+        btnDangXuat.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn đăng xuất?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                new LoginView().setVisible(true);
+                this.dispose();
+            }
+        });
+
+        pnlRightHeader.add(lblUser);
+        pnlRightHeader.add(btnDangXuat);
+
         pnlHeader.add(lblTitle, BorderLayout.WEST);
-        pnlHeader.add(lblUser, BorderLayout.EAST);
+        pnlHeader.add(pnlRightHeader, BorderLayout.EAST);
         add(pnlHeader, BorderLayout.NORTH);
 
-        // --- 2. GRID 4 NÚT KHỐI MÀU NỔI BẬT NHƯ CŨ ---
+        // --- 2. GRID 4 NÚT KHỐI MÀU NỔI BẬT ---
         JPanel pnlButtons = new JPanel(new GridLayout(2, 2, 22, 22));
         pnlButtons.setBackground(new Color(238, 242, 246));
         pnlButtons.setBorder(new EmptyBorder(30, 35, 30, 35));

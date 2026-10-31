@@ -12,9 +12,6 @@ import java.util.List;
 
 public class NhanSuDAO {
 
-    /**
-     * 1. Kiểm tra đăng nhập tài khoản
-     */
     public NhanSu checkLogin(String tenDangNhap, String matKhau) {
         String sql = "SELECT ns.*, b.TenBan FROM NhanSu ns "
                    + "LEFT JOIN BanChuyenMon b ON ns.ID_Ban = b.ID_Ban "
@@ -36,9 +33,6 @@ public class NhanSuDAO {
         return null;
     }
 
-    /**
-     * 2. Đổi mật khẩu cá nhân
-     */
     public boolean doiMatKhau(String maSV, String matKhauCu, String matKhauMoi) {
         String sql = "UPDATE NhanSu SET MatKhau = ? WHERE MaSV = ? AND MatKhau = ?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -55,9 +49,6 @@ public class NhanSuDAO {
         }
     }
 
-    /**
-     * 3. Lấy danh sách toàn bộ nhân sự
-     */
     public List<NhanSu> getAllNhanSu() {
         List<NhanSu> list = new ArrayList<>();
         String sql = "SELECT ns.*, b.TenBan FROM NhanSu ns "
@@ -75,9 +66,6 @@ public class NhanSuDAO {
         return list;
     }
 
-    /**
-     * 4. Lấy danh sách nhân sự lọc theo Ban Chuyên Môn
-     */
     public List<NhanSu> getNhanSuByBan(Integer idBan) {
         if (idBan == null || idBan <= 0) {
             return getAllNhanSu();
@@ -100,9 +88,6 @@ public class NhanSuDAO {
         return list;
     }
 
-    /**
-     * 5. Thêm mới nhân sự (Admin)
-     */
     public boolean insertNhanSu(NhanSu ns) {
         String sql = "INSERT INTO NhanSu (MaSV, MatKhau, HoTen, Lop, SoDienThoai, TrangThai, ID_VaiTro, ID_Ban) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -129,9 +114,6 @@ public class NhanSuDAO {
         }
     }
 
-    /**
-     * 6. Cập nhật thông tin nhân sự (Admin)
-     */
     public boolean updateNhanSu(NhanSu ns) {
         String sql = "UPDATE NhanSu SET HoTen = ?, Lop = ?, SoDienThoai = ?, ID_VaiTro = ?, ID_Ban = ? WHERE MaSV = ?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -157,9 +139,6 @@ public class NhanSuDAO {
         }
     }
 
-    /**
-     * 7. Khóa / Mở khóa tài khoản nhân sự
-     */
     public boolean toggleTrangThai(String maSV, boolean status) {
         String sql = "UPDATE NhanSu SET TrangThai = ? WHERE MaSV = ?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -175,9 +154,6 @@ public class NhanSuDAO {
         }
     }
 
-    /**
-     * 8. Đặt lại mật khẩu về mặc định
-     */
     public boolean resetMatKhau(String maSV, String newPass) {
         String sql = "UPDATE NhanSu SET MatKhau = ? WHERE MaSV = ?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -193,9 +169,6 @@ public class NhanSuDAO {
         }
     }
 
-    /**
-     * 9. Lấy thông tin phân quyền Ban Điều Hành
-     */
     public PhanQuyen getPhanQuyenByUsername(String username) {
         String sql = "SELECT * FROM PhanQuyenBanDieuHanh WHERE TenDangNhap = ?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -216,13 +189,9 @@ public class NhanSuDAO {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        // Trả về đối tượng phân quyền mặc định nếu chưa có
         return new PhanQuyen(username, false, false, false, false);
     }
 
-    /**
-     * 10. Lưu / Cập nhật bảng phân quyền Ban Điều Hành
-     */
     public boolean savePhanQuyen(PhanQuyen pq) {
         String checkSql = "SELECT COUNT(*) FROM PhanQuyenBanDieuHanh WHERE TenDangNhap = ?";
         String insertSql = "INSERT INTO PhanQuyenBanDieuHanh (TenDangNhap, QuyenDoiNgoai, QuyenSuKien, QuyenTruyenThong, QuyenXuatBaoCao) VALUES (?, ?, ?, ?, ?)";
@@ -264,9 +233,6 @@ public class NhanSuDAO {
         }
     }
 
-    /**
-     * Helper map ResultSet sang Object NhanSu
-     */
     private NhanSu mapNhanSuFromResultSet(ResultSet rs) throws Exception {
         NhanSu ns = new NhanSu();
         ns.setMaSV(rs.getString("MaSV"));

@@ -70,7 +70,8 @@ public class DashboardView extends JFrame {
         });
 
         btnNhiemVu.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Chức năng Nhiệm vụ truyền thông đang được hoàn thiện!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
+            NhiemVuTruyenThongDialog dialog = new NhiemVuTruyenThongDialog(this, currentUser);
+            dialog.setVisible(true);
         });
     }
 

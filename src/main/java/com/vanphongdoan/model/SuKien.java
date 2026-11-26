@@ -10,7 +10,8 @@ public class SuKien {
     private String viTriDangKy;
     private String trangThaiDangKy;
     private String danhSachViTri; // Lưu chuỗi các vị trí do Admin tạo (VD: "MC, Lễ tân")
-
+    private String viTriTuyen;
+    
     public SuKien() {}
 
     public SuKien(int idSuKien, String tenSuKien, String ngayToChuc, String diaDiem, double kinhPhi, String trangThai) {
@@ -48,4 +49,12 @@ public class SuKien {
 
     public String getDanhSachViTri() { return danhSachViTri; }
     public void setDanhSachViTri(String danhSachViTri) { this.danhSachViTri = danhSachViTri; }
+    
+    public String getViTriTuyen() {
+        return viTriTuyen;
+    }
+
+    public void setViTriTuyen(String viTriTuyen) {
+        this.viTriTuyen = viTriTuyen;
+    }
 }

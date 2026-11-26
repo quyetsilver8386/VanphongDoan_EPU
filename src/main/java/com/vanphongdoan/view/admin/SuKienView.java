@@ -1,9 +1,11 @@
 package com.vanphongdoan.view.admin;
 
-import com.vanphongdoan.model.NhanSu;
-import com.vanphongdoan.view.LoginView;
+import com.vanphongdoan.dao.NhanSuDAO;
 import com.vanphongdoan.dao.SuKienDAO;
+import com.vanphongdoan.model.NhanSu;
+import com.vanphongdoan.model.PhanQuyen;
 import com.vanphongdoan.model.SuKien;
+import com.vanphongdoan.view.LoginView;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -11,44 +13,29 @@ import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
-import java.util.ArrayList;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.text.DecimalFormat;
 import java.util.List;
-import javax.swing.SwingWorker;
 
 public class SuKienView extends JFrame {
 
     private NhanSu currentUser;
-    
     private SuKienDAO suKienDAO = new SuKienDAO();
+    private NhanSuDAO nhanSuDAO = new NhanSuDAO();
 
-    // Component Form thông tin bên trái
-    private JTextField txtIdSuKien;
-    private JTextField txtTenSuKien;
-    private JTextField txtNgayToChuc;
-    private JTextField txtDiaDiem;
-    private JTextField txtKinhPhi;
+    // Form bên trái
+    private JTextField txtMaSK, txtTenSK, txtNgayToChuc, txtDiaDiem, txtKinhPhi, txtViTriTuyen;
     private JComboBox<String> cbTrangThai;
+    private JButton btnThem, btnCapNhat, btnXoa, btnLamMoi;
 
-    private JButton btnThem;
-    private JButton btnCapNhat;
-    private JButton btnXoa;
-    private JButton btnLamMoi;
-
-    // Component Danh sách bên phải
+    // Bảng & tìm kiếm bên phải
     private JTextField txtTimKiem;
-    private JButton btnTimKiem;
     private JComboBox<String> cbFilterTrangThai;
     private JTable table;
     private DefaultTableModel tableModel;
 
-    // Menu Bar
-    private JMenuItem menuNhanSu;
-    private JMenuItem menuCaTruc;
-    private JMenuItem menuSuKien;
-    private JMenuItem menuTruyenThong;
-    
-    // Biến cờ chống treo/lặp sự kiện
-    private boolean isUpdatingSelection = false;
+    private DecimalFormat df = new DecimalFormat("#,###");
 
     public SuKienView() {
         this(null);
@@ -56,32 +43,59 @@ public class SuKienView extends JFrame {
 
     public SuKienView(NhanSu user) {
         this.currentUser = user;
+
+        // 1. Kiểm soát quyền bảo mật: Cho phép Ban Sự kiện (ID_Ban == 2) HOẶC được Admin cấp quyền
+        if (currentUser != null && currentUser.getIdVaiTro() == 2) {
+            boolean coQuyen = (currentUser.getIdBan() != null && currentUser.getIdBan() == 2);
+            PhanQuyen pq = nhanSuDAO.getPhanQuyenByUsername(currentUser.getTenDangNhap());
+            if (pq != null && pq.isQuyenSuKien()) {
+                coQuyen = true;
+            }
+
+            if (!coQuyen) {
+                JOptionPane.showMessageDialog(this,
+                        "Bạn không có quyền truy cập Quản lý Sự kiện!",
+                        "Từ chối truy cập", JOptionPane.WARNING_MESSAGE);
+                new NhanSuView(currentUser).setVisible(true);
+                this.dispose();
+                return;
+            }
+        }
+
+        try {
+            for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (Exception ignored) {}
+
         initComponents();
-        loadDataFromDB();
+        loadDataToTable();
     }
 
     private void initComponents() {
-        setTitle("QUAN LY SU KIEN - HE THONG VAN PHONG DOAN EPU");
-        setSize(1050, 650);
+        setTitle("QUẢN LÝ SỰ KIỆN - HỆ THỐNG VĂN PHÒNG ĐOÀN EPU");
+        setSize(1240, 720);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
 
-        // 1. Gắn Menu Bar
         setJMenuBar(createMenuBar());
 
-        // 2. Banner Header (Đồng bộ font & màu với NhanSuView)
+        // 1. HEADER
         JPanel panelHeader = new JPanel(new BorderLayout());
         panelHeader.setBackground(new Color(0, 102, 204));
-        panelHeader.setBorder(new EmptyBorder(12, 15, 12, 15));
+        panelHeader.setBorder(new EmptyBorder(12, 18, 12, 18));
 
         JLabel lblTitle = new JLabel("QUẢN LÝ KẾ HOẠCH VÀ TỔ CHỨC SỰ KIỆN");
         lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
         lblTitle.setForeground(Color.WHITE);
 
-        String hoTenUser = (currentUser != null && currentUser.getHoTen() != null)
-                ? currentUser.getHoTen() : "Admin";
-        JLabel lblUser = new JLabel("Xin chào: " + hoTenUser);
+        String tenUser = (currentUser != null && currentUser.getHoTen() != null)
+                ? currentUser.getHoTen() : "Quản trị viên Văn phòng";
+        JLabel lblUser = new JLabel("Xin chào: " + tenUser);
         lblUser.setFont(new Font("Segoe UI", Font.ITALIC, 13));
         lblUser.setForeground(Color.WHITE);
 
@@ -89,198 +103,323 @@ public class SuKienView extends JFrame {
         panelHeader.add(lblUser, BorderLayout.EAST);
         add(panelHeader, BorderLayout.NORTH);
 
-        // 3. Panel Body Trung Tâm
-        JPanel panelCenter = new JPanel(new BorderLayout(12, 10));
-        panelCenter.setBorder(new EmptyBorder(0, 10, 10, 10));
-
-        panelCenter.add(createLeftPanel(), BorderLayout.WEST);
-        panelCenter.add(createRightPanel(), BorderLayout.CENTER);
-
-        add(panelCenter, BorderLayout.CENTER);
-
-        // Đăng ký sự kiện
-        initEvents();
-    }
-
-    // Panel bên trái: Form nhập liệu được dựng bằng SpringLayout/Grid đồng bộ
-    private JPanel createLeftPanel() {
-        JPanel panelWest = new JPanel(new BorderLayout(5, 10));
-        panelWest.setPreferredSize(new Dimension(320, 0));
-        panelWest.setBorder(BorderFactory.createTitledBorder(
+        // 2. PANEL FORM BÊN TRÁI (Giữ nguyên bố cục tối giản)
+        JPanel panelLeft = new JPanel(new BorderLayout());
+        panelLeft.setPreferredSize(new Dimension(340, 0));
+        panelLeft.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createEtchedBorder(),
                 "Thông tin sự kiện",
-                TitledBorder.LEFT,
-                TitledBorder.TOP,
+                TitledBorder.LEFT, TitledBorder.TOP,
                 new Font("Segoe UI", Font.BOLD, 12)
         ));
 
-        JPanel panelForm = new JPanel(new GridBagLayout());
-        panelForm.setBorder(new EmptyBorder(10, 10, 10, 10));
+        JPanel panelFields = new JPanel(new GridBagLayout());
+        panelFields.setBorder(new EmptyBorder(12, 12, 12, 12));
         GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(7, 5, 7, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(6, 4, 6, 4);
 
-        // Khởi tạo các trường nhập liệu - KHÓA MÃ VÌ SQL TỰ TĂNG
-        txtIdSuKien = new JTextField(15);
-        txtIdSuKien.setPreferredSize(new Dimension(170, 26));
-        txtIdSuKien.setEditable(false); // Khóa không cho nhập tay
-        txtIdSuKien.setBackground(new Color(240, 240, 240)); // Màu xám nhạt thể hiện trường tự động
-        txtIdSuKien.setToolTipText("Mã tự động tăng theo hệ thống");
+        txtMaSK = new JTextField();
+        txtMaSK.setEditable(false);
+        txtMaSK.setBackground(new Color(235, 238, 242));
+        txtMaSK.setToolTipText("Mã sự kiện tự động sinh");
 
-        txtTenSuKien = new JTextField(15);
-        txtTenSuKien.setPreferredSize(new Dimension(170, 26));
+        txtTenSK = new JTextField();
+        txtNgayToChuc = new JTextField();
+        txtNgayToChuc.setToolTipText("Nhập theo định dạng YYYY-MM-DD hoặc DD/MM/YYYY");
 
-        txtNgayToChuc = new JTextField(15);
-        txtNgayToChuc.setPreferredSize(new Dimension(170, 26));
-        txtNgayToChuc.setToolTipText("Định dạng: YYYY-MM-DD");
+        txtDiaDiem = new JTextField();
+        txtKinhPhi = new JTextField("0");
+        cbTrangThai = new JComboBox<>(new String[]{"Sắp diễn ra", "Đang diễn ra", "Đã kết thúc", "Tạm hoãn"});
 
-        txtDiaDiem = new JTextField(15);
-        txtDiaDiem.setPreferredSize(new Dimension(170, 26));
+        addFormField(panelFields, "Mã sự kiện:", txtMaSK, gbc, 0);
+        addFormField(panelFields, "Tên sự kiện:", txtTenSK, gbc, 1);
+        addFormField(panelFields, "Ngày tổ chức:", txtNgayToChuc, gbc, 2);
+        addFormField(panelFields, "Địa điểm:", txtDiaDiem, gbc, 3);
+        addFormField(panelFields, "Kinh phí (VNĐ):", txtKinhPhi, gbc, 4);
 
-        txtKinhPhi = new JTextField(15);
-        txtKinhPhi.setPreferredSize(new Dimension(170, 26));
+        // Khởi tạo ô Vị trí tuyển kèm nút "Chọn..." tích chọn nhiều vị trí
+        txtViTriTuyen = new JTextField("MC, Lễ tân, Chạy sự kiện, Hậu cần");
+        txtViTriTuyen.setToolTipText("Bấm nút Chọn để tích nhiều vị trí hoặc gõ thêm trực tiếp");
 
-        cbTrangThai = new JComboBox<>(new String[]{
-                "Kế hoạch", 
-                "Đang diễn ra", 
-                "Đã hoàn thành", 
-                "Tạm hoãn"
+        JButton btnChonViTri = new JButton("Chọn...");
+        btnChonViTri.setMargin(new Insets(2, 8, 2, 8));
+        btnChonViTri.setFocusPainted(false);
+
+        JPopupMenu popupViTri = new JPopupMenu();
+        String[] danhSachViTri = {
+            "MC",
+            "Lễ tân",
+            "Chạy sự kiện",
+            "Hậu cần",
+            "Kỹ thuật / Âm thanh",
+            "Truyền thông / Media",
+            "An ninh / Điều phối"
+        };
+        java.util.List<JCheckBoxMenuItem> checkItems = new java.util.ArrayList<>();
+
+        for (String vt : danhSachViTri) {
+            JCheckBoxMenuItem item = new JCheckBoxMenuItem(vt);
+            item.putClientProperty("CheckBoxMenuItem.doNotCloseOnMouseClick", Boolean.TRUE);
+            item.addActionListener(e -> {
+                java.util.List<String> selected = new java.util.ArrayList<>();
+                for (JCheckBoxMenuItem cb : checkItems) {
+                    if (cb.isSelected()) {
+                        selected.add(cb.getText());
+                    }
+                }
+                txtViTriTuyen.setText(String.join(", ", selected));
+            });
+            checkItems.add(item);
+            popupViTri.add(item);
+        }
+
+        btnChonViTri.addActionListener(e -> {
+            String currentText = txtViTriTuyen.getText();
+            for (JCheckBoxMenuItem cb : checkItems) {
+                cb.setSelected(currentText.contains(cb.getText()));
+            }
+            popupViTri.show(btnChonViTri, 0, btnChonViTri.getHeight());
         });
-        cbTrangThai.setPreferredSize(new Dimension(170, 26));
 
-        // Hàng 0: Mã sự kiện
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.35;
-        panelForm.add(new JLabel("Mã sự kiện:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.65;
-        panelForm.add(txtIdSuKien, gbc);
+        JPanel pnlViTriWrapper = new JPanel(new BorderLayout(4, 0));
+        pnlViTriWrapper.add(txtViTriTuyen, BorderLayout.CENTER);
+        pnlViTriWrapper.add(btnChonViTri, BorderLayout.EAST);
 
-        // Hàng 1: Tên sự kiện
-        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.35;
-        panelForm.add(new JLabel("Tên sự kiện:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.65;
-        panelForm.add(txtTenSuKien, gbc);
+        addFormField(panelFields, "Vị trí tuyển:", pnlViTriWrapper, gbc, 5);
+        addFormField(panelFields, "Trạng thái:", cbTrangThai, gbc, 6);
 
-        // Hàng 2: Ngày tổ chức
-        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.35;
-        panelForm.add(new JLabel("Ngày tổ chức:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.65;
-        panelForm.add(txtNgayToChuc, gbc);
+        panelLeft.add(panelFields, BorderLayout.NORTH);
 
-        // Hàng 3: Địa điểm
-        gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0.35;
-        panelForm.add(new JLabel("Địa điểm:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.65;
-        panelForm.add(txtDiaDiem, gbc);
-
-        // Hàng 4: Kinh phí
-        gbc.gridx = 0; gbc.gridy = 4; gbc.weightx = 0.35;
-        panelForm.add(new JLabel("Kinh phí:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.65;
-        panelForm.add(txtKinhPhi, gbc);
-
-        // Hàng 5: Trạng thái
-        gbc.gridx = 0; gbc.gridy = 5; gbc.weightx = 0.35;
-        panelForm.add(new JLabel("Trạng thái:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 0.65;
-        panelForm.add(cbTrangThai, gbc);
-
-        // Khoảng trống co giãn phía dưới
-        gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 2; gbc.weighty = 1.0;
-        panelForm.add(new JPanel(), gbc);
-
-        panelWest.add(panelForm, BorderLayout.CENTER);
-
-        // Panel nút bấm dưới cùng bên trái (Chuẩn 2x2 nút bo góc xám như NhanSuView)
-        JPanel panelButtons = new JPanel(new GridLayout(2, 2, 8, 8));
-        panelButtons.setBorder(new EmptyBorder(5, 10, 15, 10));
+        // Cụm 4 nút bấm phía dưới
+        JPanel panelButtons = new JPanel(new GridLayout(2, 2, 10, 10));
+        panelButtons.setBorder(new EmptyBorder(10, 12, 14, 12));
 
         btnThem = new JButton("Thêm mới");
         btnCapNhat = new JButton("Cập nhật");
         btnXoa = new JButton("Xóa bỏ");
         btnLamMoi = new JButton("Làm mới");
 
-        btnThem.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnCapNhat.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnXoa.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        btnLamMoi.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        Dimension btnDim = new Dimension(0, 34);
+        btnThem.setPreferredSize(btnDim);
+        btnCapNhat.setPreferredSize(btnDim);
+        btnXoa.setPreferredSize(btnDim);
+        btnLamMoi.setPreferredSize(btnDim);
 
         panelButtons.add(btnThem);
         panelButtons.add(btnCapNhat);
         panelButtons.add(btnXoa);
         panelButtons.add(btnLamMoi);
 
-        panelWest.add(panelButtons, BorderLayout.SOUTH);
-        return panelWest;
-    }
+        panelLeft.add(panelButtons, BorderLayout.SOUTH);
 
-    // Panel bên phải: Bảng và thanh tìm kiếm
-    private JPanel createRightPanel() {
-        JPanel panelEast = new JPanel(new BorderLayout(8, 8));
-        panelEast.setBorder(BorderFactory.createTitledBorder(
+        // 3. PANEL BẢNG BÊN PHẢI
+        JPanel panelCenter = new JPanel(new BorderLayout(6, 8));
+        panelCenter.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createEtchedBorder(),
                 "Danh sách sự kiện trong hệ thống",
-                TitledBorder.LEFT,
-                TitledBorder.TOP,
+                TitledBorder.LEFT, TitledBorder.TOP,
                 new Font("Segoe UI", Font.BOLD, 12)
         ));
 
-        // Thanh tìm kiếm phía trên bảng
-        JPanel panelSearch = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 5));
+        JPanel panelSearch = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 6));
+        txtTimKiem = new JTextField(16);
+        txtTimKiem.setPreferredSize(new Dimension(180, 28));
 
-        txtTimKiem = new JTextField(12);
-        txtTimKiem.setPreferredSize(new Dimension(140, 28));
+        JButton btnTimKiem = new JButton("Tìm kiếm");
+        cbFilterTrangThai = new JComboBox<>(new String[]{"-- Tất cả trạng thái --", "Sắp diễn ra", "Đang diễn ra", "Đã kết thúc", "Tạm hoãn"});
+        cbFilterTrangThai.setPreferredSize(new Dimension(165, 28));
 
-        btnTimKiem = new JButton("Tìm kiếm");
-        btnTimKiem.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        cbFilterTrangThai = new JComboBox<>(new String[]{
-                "-- Tất cả trạng thái --",
-                "Kế hoạch",
-                "Đang diễn ra",
-                "Đã hoàn thành",
-                "Tạm hoãn"
-        });
-        cbFilterTrangThai.setPreferredSize(new Dimension(150, 28));
-
-        panelSearch.add(new JLabel("Tìm kiếm (Tên/Địa điểm):"));
+        panelSearch.add(new JLabel("Tìm kiếm:"));
         panelSearch.add(txtTimKiem);
         panelSearch.add(btnTimKiem);
-        panelSearch.add(new JLabel("Lọc trạng thái:"));
+        panelSearch.add(new JLabel("Lọc:"));
         panelSearch.add(cbFilterTrangThai);
 
-        panelEast.add(panelSearch, BorderLayout.NORTH);
+        panelCenter.add(panelSearch, BorderLayout.NORTH);
 
-        // Bảng dữ liệu JTable
-        String[] columns = {"Mã SK", "Tên sự kiện", "Ngày tổ chức", "Địa điểm", "Kinh phí", "Trạng thái"};
+        String[] columns = {"Mã SK", "Tên sự kiện", "Ngày tổ chức", "Địa điểm", "Kinh phí (VNĐ)", "Vị trí mở tuyển", "Trạng thái"};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
-
         table = new JTable(tableModel);
-        table.setRowHeight(24);
-        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        table.setRowHeight(26);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
 
-        // Căn giữa cho cột Mã, Ngày, Trạng thái
+        table.getColumnModel().getColumn(0).setMaxWidth(65);
+        table.getColumnModel().getColumn(1).setPreferredWidth(210);
+        table.getColumnModel().getColumn(2).setPreferredWidth(100);
+        table.getColumnModel().getColumn(3).setPreferredWidth(130);
+        table.getColumnModel().getColumn(4).setPreferredWidth(110);
+        table.getColumnModel().getColumn(5).setPreferredWidth(190);
+        table.getColumnModel().getColumn(6).setPreferredWidth(100);
+
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
         table.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
         table.getColumnModel().getColumn(2).setCellRenderer(centerRenderer);
-        table.getColumnModel().getColumn(5).setCellRenderer(centerRenderer);
+        table.getColumnModel().getColumn(6).setCellRenderer(centerRenderer);
 
-        table.getColumnModel().getColumn(0).setPreferredWidth(70);
-        table.getColumnModel().getColumn(1).setPreferredWidth(200);
-        table.getColumnModel().getColumn(2).setPreferredWidth(95);
-        table.getColumnModel().getColumn(3).setPreferredWidth(130);
-        table.getColumnModel().getColumn(4).setPreferredWidth(95);
-        table.getColumnModel().getColumn(5).setPreferredWidth(100);
+        DefaultTableCellRenderer rightRenderer = new DefaultTableCellRenderer();
+        rightRenderer.setHorizontalAlignment(SwingConstants.RIGHT);
+        table.getColumnModel().getColumn(4).setCellRenderer(rightRenderer);
 
-        JScrollPane scrollPane = new JScrollPane(table);
-        panelEast.add(scrollPane, BorderLayout.CENTER);
+        panelCenter.add(new JScrollPane(table), BorderLayout.CENTER);
 
-        return panelEast;
+        // Container chính
+        JPanel panelMain = new JPanel(new BorderLayout(10, 10));
+        panelMain.setBorder(new EmptyBorder(0, 10, 10, 10));
+        panelMain.add(panelLeft, BorderLayout.WEST);
+        panelMain.add(panelCenter, BorderLayout.CENTER);
+        add(panelMain, BorderLayout.CENTER);
+
+        // SỰ KIỆN
+        btnTimKiem.addActionListener(e -> loadDataToTable());
+        txtTimKiem.addActionListener(e -> loadDataToTable());
+        cbFilterTrangThai.addActionListener(e -> loadDataToTable());
+
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int row = table.getSelectedRow();
+                if (row >= 0) {
+                    txtMaSK.setText(tableModel.getValueAt(row, 0).toString());
+                    txtTenSK.setText(tableModel.getValueAt(row, 1).toString());
+                    txtNgayToChuc.setText(tableModel.getValueAt(row, 2).toString());
+                    txtDiaDiem.setText(tableModel.getValueAt(row, 3).toString());
+                    txtKinhPhi.setText(tableModel.getValueAt(row, 4).toString().replace(",", "").replace(".", ""));
+                    txtViTriTuyen.setText(tableModel.getValueAt(row, 5).toString());
+                    cbTrangThai.setSelectedItem(tableModel.getValueAt(row, 6).toString());
+                }
+            }
+        });
+
+        btnThem.addActionListener(e -> xuLyThem());
+        btnCapNhat.addActionListener(e -> xuLyCapNhat());
+        btnXoa.addActionListener(e -> xuLyXoa());
+        btnLamMoi.addActionListener(e -> clearForm());
+    }
+
+    private void addFormField(JPanel panel, String label, JComponent comp, GridBagConstraints gbc, int row) {
+        gbc.gridwidth = 1;
+        gbc.gridx = 0; gbc.gridy = row; gbc.weightx = 0.35;
+        panel.add(new JLabel(label), gbc);
+
+        gbc.gridx = 1; gbc.gridy = row; gbc.weightx = 0.65;
+        comp.setPreferredSize(new Dimension(0, 28));
+        panel.add(comp, gbc);
+    }
+
+    private void loadDataToTable() {
+        tableModel.setRowCount(0);
+        String kw = txtTimKiem.getText().trim().toLowerCase();
+        String filterTT = cbFilterTrangThai.getSelectedIndex() > 0
+                ? cbFilterTrangThai.getSelectedItem().toString() : "";
+
+        List<SuKien> list = suKienDAO.getAllSuKien();
+        if (list == null) return;
+
+        for (SuKien sk : list) {
+            if (!filterTT.isEmpty() && (sk.getTrangThai() == null || !sk.getTrangThai().equalsIgnoreCase(filterTT))) {
+                continue;
+            }
+            if (!kw.isEmpty()) {
+                String ten = sk.getTenSuKien() != null ? sk.getTenSuKien().toLowerCase() : "";
+                String dd = sk.getDiaDiem() != null ? sk.getDiaDiem().toLowerCase() : "";
+                if (!ten.contains(kw) && !dd.contains(kw)) continue;
+            }
+
+            String viTri = (sk.getViTriTuyen() != null) ? sk.getViTriTuyen() : "";
+
+            tableModel.addRow(new Object[]{
+                    sk.getIdSuKien(),
+                    sk.getTenSuKien(),
+                    sk.getNgayToChuc(),
+                    sk.getDiaDiem(),
+                    df.format(sk.getKinhPhi()),
+                    viTri,
+                    sk.getTrangThai()
+            });
+        }
+    }
+
+    private SuKien getFormData() {
+        SuKien sk = new SuKien();
+        if (!txtMaSK.getText().trim().isEmpty()) {
+            sk.setIdSuKien(Integer.parseInt(txtMaSK.getText().trim()));
+        }
+        sk.setTenSuKien(txtTenSK.getText().trim());
+        sk.setNgayToChuc(chuanHoaNgaySQL(txtNgayToChuc.getText()));
+        sk.setDiaDiem(txtDiaDiem.getText().trim());
+        try {
+            String kp = txtKinhPhi.getText().trim().replace(",", "").replace(".", "");
+            sk.setKinhPhi(kp.isEmpty() ? 0 : Double.parseDouble(kp));
+        } catch (NumberFormatException e) {
+            sk.setKinhPhi(0);
+        }
+        sk.setViTriTuyen(txtViTriTuyen.getText().trim());
+        sk.setTrangThai(cbTrangThai.getSelectedItem().toString());
+        return sk;
+    }
+
+    private void xuLyThem() {
+        if (txtTenSK.getText().trim().isEmpty() || txtNgayToChuc.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng nhập Tên sự kiện và Ngày tổ chức (YYYY-MM-DD)!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (suKienDAO.insertSuKien(getFormData())) {
+            JOptionPane.showMessageDialog(this, "Thêm sự kiện thành công!");
+            loadDataToTable();
+            clearForm();
+        } else {
+            JOptionPane.showMessageDialog(this, "Thêm thất bại! Kiểm tra lại định dạng ngày (YYYY-MM-DD).", "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void xuLyCapNhat() {
+        if (txtMaSK.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn sự kiện cần cập nhật trên bảng!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (suKienDAO.updateSuKien(getFormData())) {
+            JOptionPane.showMessageDialog(this, "Cập nhật sự kiện thành công!");
+            loadDataToTable();
+            clearForm();
+        } else {
+            JOptionPane.showMessageDialog(this, "Cập nhật thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void xuLyXoa() {
+        if (txtMaSK.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Vui lòng chọn sự kiện cần xóa trên bảng!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc muốn xóa sự kiện này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            int id = Integer.parseInt(txtMaSK.getText().trim());
+            if (suKienDAO.deleteSuKien(id)) {
+                JOptionPane.showMessageDialog(this, "Đã xóa sự kiện!");
+                loadDataToTable();
+                clearForm();
+            } else {
+                JOptionPane.showMessageDialog(this, "Xóa thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void clearForm() {
+        txtMaSK.setText("");
+        txtTenSK.setText("");
+        txtNgayToChuc.setText("");
+        txtDiaDiem.setText("");
+        txtKinhPhi.setText("0");
+        txtViTriTuyen.setText("MC, Lễ tân, Chạy sự kiện, Hậu cần");
+        cbTrangThai.setSelectedIndex(0);
+        table.clearSelection();
     }
 
     private JMenuBar createMenuBar() {
@@ -301,235 +440,58 @@ public class SuKienView extends JFrame {
         menuHeThong.add(menuThoat);
 
         JMenu menuChucNang = new JMenu("Quản lý Chức năng");
-        menuNhanSu = new JMenuItem("Quản lý Nhân sự");
-        menuCaTruc = new JMenuItem("Quản lý Ca trực");
-        menuSuKien = new JMenuItem("Quản lý Sự kiện");
-        menuTruyenThong = new JMenuItem("Quản lý Truyền thông");
+        JMenuItem menuNhanSu = new JMenuItem("Quản lý Nhân sự");
+        JMenuItem menuCaTruc = new JMenuItem("Quản lý Ca trực");
+        JMenuItem menuSuKien = new JMenuItem("Quản lý Sự kiện");
+        JMenuItem menuTruyenThong = new JMenuItem("Quản lý Truyền thông");
 
-        menuNhanSu.addActionListener(e -> {
-            new NhanSuView(currentUser).setVisible(true);
-            this.dispose();
-        });
-
-        menuCaTruc.addActionListener(e -> {
-            new CaTrucView(currentUser).setVisible(true);
-            this.dispose();
-        });
-
-        menuSuKien.addActionListener(e -> clearForm());
-
-        menuTruyenThong.addActionListener(e -> {
-            new TruyenThongView(currentUser).setVisible(true);
-            this.dispose();
-        });
+        menuNhanSu.addActionListener(e -> { new NhanSuView(currentUser).setVisible(true); this.dispose(); });
+        menuCaTruc.addActionListener(e -> { new CaTrucView(currentUser).setVisible(true); this.dispose(); });
+        menuSuKien.addActionListener(e -> loadDataToTable());
+        menuTruyenThong.addActionListener(e -> { new TruyenThongView(currentUser).setVisible(true); this.dispose(); });
 
         menuChucNang.add(menuNhanSu);
         menuChucNang.add(menuCaTruc);
         menuChucNang.add(menuSuKien);
         menuChucNang.add(menuTruyenThong);
 
+        // Phân quyền Menu Bar đồng bộ với NhanSuView và TruyenThongView
+        if (currentUser != null && currentUser.getIdVaiTro() == 2) {
+            Integer idBan = currentUser.getIdBan();
+            boolean quyenCaTruc = (idBan != null && idBan == 1);
+            boolean quyenSuKien = (idBan != null && idBan == 2);
+            boolean quyenTruyenThong = (idBan != null && idBan == 3);
+
+            PhanQuyen pq = nhanSuDAO.getPhanQuyenByUsername(currentUser.getTenDangNhap());
+            if (pq != null) {
+                quyenCaTruc = quyenCaTruc || pq.isQuyenDoiNgoai();
+                quyenSuKien = quyenSuKien || pq.isQuyenSuKien();
+                quyenTruyenThong = quyenTruyenThong || pq.isQuyenTruyenThong();
+            }
+
+            menuCaTruc.setEnabled(quyenCaTruc);
+            menuSuKien.setEnabled(quyenSuKien);
+            menuTruyenThong.setEnabled(quyenTruyenThong);
+        }
+
         menuBar.add(menuHeThong);
         menuBar.add(menuChucNang);
-
         return menuBar;
     }
 
-    private void initEvents() {
-        // CHỐNG TREO: Bọc kiểm tra getValueIsAdjusting và cờ isUpdatingSelection
-        table.getSelectionModel().addListSelectionListener(e -> {
-            if (e.getValueIsAdjusting() || isUpdatingSelection) return;
-
-            int row = table.getSelectedRow();
-            if (row != -1) {
-                txtIdSuKien.setText(tableModel.getValueAt(row, 0) != null ? tableModel.getValueAt(row, 0).toString() : "");
-                txtTenSuKien.setText(tableModel.getValueAt(row, 1) != null ? tableModel.getValueAt(row, 1).toString() : "");
-                txtNgayToChuc.setText(tableModel.getValueAt(row, 2) != null ? tableModel.getValueAt(row, 2).toString() : "");
-                txtDiaDiem.setText(tableModel.getValueAt(row, 3) != null ? tableModel.getValueAt(row, 3).toString() : "");
-                txtKinhPhi.setText(tableModel.getValueAt(row, 4) != null ? tableModel.getValueAt(row, 4).toString() : "");
-                if (tableModel.getValueAt(row, 5) != null) {
-                    cbTrangThai.setSelectedItem(tableModel.getValueAt(row, 5).toString());
-                }
-            }
-        });
-
-        btnLamMoi.addActionListener(e -> clearForm());
-
-        btnThem.addActionListener(e -> {
-            String ten = txtTenSuKien.getText().trim();
-            if (ten.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Vui lòng nhập tên sự kiện!", "Cảnh báo", JOptionPane.WARNING_MESSAGE);
-                txtTenSuKien.requestFocus();
-                return;
-            }
-
-            SuKien sk = new SuKien();
-            sk.setTenSuKien(ten);
-            sk.setNgayToChuc(txtNgayToChuc.getText().trim());
-            sk.setDiaDiem(txtDiaDiem.getText().trim());
-            try {
-                sk.setKinhPhi(Double.parseDouble(txtKinhPhi.getText().trim().replaceAll("[^0-9]", "")));
-            } catch (Exception ex) {
-                sk.setKinhPhi(0);
-            }
-            sk.setTrangThai(cbTrangThai.getSelectedItem().toString());
-
-            if (suKienDAO.insertSuKien(sk)) {
-                JOptionPane.showMessageDialog(this, "Thêm sự kiện mới vào CSDL thành công!");
-                loadDataFromDB();
-                clearForm();
-            } else {
-                JOptionPane.showMessageDialog(this, "Thêm sự kiện thất bại! Kiểm tra định dạng ngày (YYYY-MM-DD).", "Lỗi", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
-        btnCapNhat.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row == -1) {
-                JOptionPane.showMessageDialog(this, "Vui lòng chọn sự kiện cần cập nhật trên bảng!", "Thông báo", JOptionPane.INFORMATION_MESSAGE);
-                return;
-            }
-
-            isUpdatingSelection = true;
-            tableModel.setValueAt(txtIdSuKien.getText().trim(), row, 0);
-            tableModel.setValueAt(txtTenSuKien.getText().trim(), row, 1);
-            tableModel.setValueAt(txtNgayToChuc.getText().trim(), row, 2);
-            tableModel.setValueAt(txtDiaDiem.getText().trim(), row, 3);
-            tableModel.setValueAt(txtKinhPhi.getText().trim(), row, 4);
-            tableModel.setValueAt(cbTrangThai.getSelectedItem().toString(), row, 5);
-            isUpdatingSelection = false;
-
-            JOptionPane.showMessageDialog(this, "Cập nhật thông tin sự kiện thành công!");
-        });
-
-        btnXoa.addActionListener(e -> {
-            int row = table.getSelectedRow();
-            if (row == -1) {
-                JOptionPane.showMessageDialog(this, "Vui lòng chọn sự kiện cần xóa trên bảng!", "Thông báo", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            int confirm = JOptionPane.showConfirmDialog(
-                    this, 
-                    "Bạn có chắc chắn muốn xóa sự kiện này khỏi cơ sở dữ liệu?", 
-                    "Xác nhận xóa", 
-                    JOptionPane.YES_NO_OPTION, 
-                    JOptionPane.QUESTION_MESSAGE
-            );
-
-            if (confirm == JOptionPane.YES_OPTION) {
-                try {
-                    // 1. Lấy ID_SuKien từ cột 0 của dòng đang chọn
-                    int idSuKien = Integer.parseInt(tableModel.getValueAt(row, 0).toString().trim());
-
-                    // 2. Gọi DAO xóa trực tiếp trong SQL Server
-                    if (suKienDAO.deleteSuKien(idSuKien)) {
-                        JOptionPane.showMessageDialog(this, "Đã xóa sự kiện thành công!");
-                        
-                        // 3. Tải lại dữ liệu mới nhất từ CSDL lên bảng và xóa trắng form
-                        loadDataFromDB();
-                        clearForm();
-                    } else {
-                        JOptionPane.showMessageDialog(this, "Xóa sự kiện thất bại! Vui lòng thử lại.", "Lỗi", JOptionPane.ERROR_MESSAGE);
-                    }
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                    JOptionPane.showMessageDialog(this, "Lỗi xử lý xóa: " + ex.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        });
-
-        // Tìm kiếm và lọc
-        btnTimKiem.addActionListener(e -> locSuKien());
-        txtTimKiem.addActionListener(e -> locSuKien());
-        cbFilterTrangThai.addActionListener(e -> locSuKien());
-    }
-
-    private void clearForm() {
-        txtIdSuKien.setText("");
-        txtTenSuKien.setText("");
-        txtNgayToChuc.setText("");
-        txtDiaDiem.setText("");
-        txtKinhPhi.setText("");
-        cbTrangThai.setSelectedIndex(0);
-        table.clearSelection();
-    }
-    
-    private String formatTienTe(String rawMoney) {
-        if (rawMoney == null || rawMoney.trim().isEmpty()) return "0";
-        try {
-            String clean = rawMoney.replaceAll("[^0-9]", "");
-            if (clean.isEmpty()) return "0";
-            long amount = Long.parseLong(clean);
-            return String.format("%,d", amount); // Kết quả: 100,000,000
-        } catch (Exception e) {
-            return rawMoney;
+    private String chuanHoaNgaySQL(String input) {
+        if (input == null) return "";
+        input = input.trim();
+        if (input.matches("\\d{1,2}/\\d{1,2}/\\d{4}")) {
+            String[] p = input.split("/");
+            String day = p[0].length() == 1 ? "0" + p[0] : p[0];
+            String month = p[1].length() == 1 ? "0" + p[1] : p[1];
+            return p[2] + "-" + month + "-" + day;
         }
-    }
-
-    private void loadDataFromDB() {
-        SwingWorker<List<SuKien>, Void> worker = new SwingWorker<List<SuKien>, Void>() {
-            @Override
-            protected List<SuKien> doInBackground() {
-                return suKienDAO.getAllSuKien();
-            }
-
-            @Override
-            protected void done() {
-                try {
-                    List<SuKien> list = get();
-                    isUpdatingSelection = true;
-                    tableModel.setRowCount(0);
-                    for (SuKien sk : list) {
-                        tableModel.addRow(new Object[]{
-                                sk.getIdSuKien(),
-                                sk.getTenSuKien(),
-                                sk.getNgayToChuc(),
-                                sk.getDiaDiem() != null ? sk.getDiaDiem() : "",
-                                formatTienTe(String.valueOf((long) sk.getKinhPhi())),
-                                sk.getTrangThai()
-                        });
-                    }
-                    isUpdatingSelection = false;
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        };
-        worker.execute();
-    }
-
-    private void locSuKien() {
-        String keyword = txtTimKiem.getText().trim().toLowerCase();
-        String selectedStatus = cbFilterTrangThai.getSelectedItem().toString();
-
-        String[][] allData = {
-                {"SK01", "Chào Tân Sinh Viên Khóa D19", "2026-11-05", "Hội trường A1", "15,000,000", "Đang diễn ra"},
-                {"SK02", "Giải Bóng Đá Cúp Thanh Niên", "2026-11-12", "Sân bóng EPU", "8,500,000", "Kế hoạch"},
-                {"SK03", "Tập huấn Cán bộ Đoàn Xuất sắc", "2026-11-20", "Phòng A806", "4,000,000", "Kế hoạch"},
-                {"SK04", "Hiến Máu Nhân Đạo Giọt Hồng", "2026-10-15", "Sảnh nhà B", "5,000,000", "Đã hoàn thành"},
-                {"SK05", "Hội thảo Chuyển đổi số Sinh viên", "2026-10-02", "Hội trường A1", "6,200,000", "Đã hoàn thành"}
-        };
-
-        isUpdatingSelection = true;
-        tableModel.setRowCount(0);
-        for (String[] row : allData) {
-            boolean matchKeyword = keyword.isEmpty()
-                    || row[1].toLowerCase().contains(keyword)
-                    || row[3].toLowerCase().contains(keyword);
-
-            boolean matchStatus = cbFilterTrangThai.getSelectedIndex() == 0
-                    || row[5].equalsIgnoreCase(selectedStatus);
-
-            if (matchKeyword && matchStatus) {
-                tableModel.addRow(row);
-            }
-        }
-        isUpdatingSelection = false;
+        return input;
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            new SuKienView(null).setVisible(true);
-        });
+        SwingUtilities.invokeLater(() -> new SuKienView(null).setVisible(true));
     }
 }

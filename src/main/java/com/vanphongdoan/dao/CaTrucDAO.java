@@ -222,4 +222,49 @@ public class CaTrucDAO {
         }
         return list;
     }
+    public boolean khoiTaoLichTuan(java.time.LocalDate mondayOfWeek) {
+        String checkSql = "SELECT COUNT(*) FROM CaTruc WHERE NgayTruc = ? AND BuoiTruc = ?";
+        String insertSql = "INSERT INTO CaTruc (NgayTruc, BuoiTruc, SoLuongToiDa, Thu, TrangThai) VALUES (?, ?, 1, ?, N'Mở đăng ký')";
+        
+        try (java.sql.Connection conn = com.vanphongdoan.config.DatabaseConnection.getConnection();
+             java.sql.PreparedStatement psCheck = conn.prepareStatement(checkSql);
+             java.sql.PreparedStatement psInsert = conn.prepareStatement(insertSql)) {
+            
+            for (int i = 0; i < 5; i++) { // Thứ 2 (i=0) đến Thứ 6 (i=4)
+                java.time.LocalDate date = mondayOfWeek.plusDays(i);
+                java.sql.Date sqlDate = java.sql.Date.valueOf(date);
+                String thu = "Thứ " + (i + 2);
+
+                // 1. Ca Sáng
+                psCheck.setDate(1, sqlDate);
+                psCheck.setString(2, "Sáng");
+                try (java.sql.ResultSet rs = psCheck.executeQuery()) {
+                    if (rs.next() && rs.getInt(1) == 0) {
+                        psInsert.setDate(1, sqlDate);
+                        psInsert.setString(2, "Sáng");
+                        psInsert.setString(3, thu);
+                        psInsert.addBatch();
+                    }
+                }
+
+                // 2. Ca Chiều
+                psCheck.setDate(1, sqlDate);
+                psCheck.setString(2, "Chiều");
+                try (java.sql.ResultSet rs = psCheck.executeQuery()) {
+                    if (rs.next() && rs.getInt(1) == 0) {
+                        psInsert.setDate(1, sqlDate);
+                        psInsert.setString(2, "Chiều");
+                        psInsert.setString(3, thu);
+                        psInsert.addBatch();
+                    }
+                }
+            }
+            psInsert.executeBatch();
+            return true;
+        } catch (Exception e) {
+            System.err.println(">>> LỖI KHỞI TẠO LỊCH TUẦN: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

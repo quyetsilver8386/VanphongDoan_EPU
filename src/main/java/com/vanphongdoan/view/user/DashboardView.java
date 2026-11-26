@@ -2,100 +2,127 @@ package com.vanphongdoan.view.user;
 
 import com.vanphongdoan.model.NhanSu;
 import com.vanphongdoan.view.LoginView;
+
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 public class DashboardView extends JFrame {
-
     private NhanSu currentUser;
 
-    public DashboardView(NhanSu ns) {
-        this.currentUser = ns;
-
-        try {
-            for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (Exception ignored) {}
-
-        setTitle("TRANG CHU - THANH VIEN VAN PHONG DOAN");
-        setSize(750, 480);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    public DashboardView(NhanSu currentUser) {
+        this.currentUser = currentUser;
+        
+        setTitle("HỆ THỐNG QUẢN LÝ VĂN PHÒNG ĐOÀN - TRANG CHỦ");
+        setSize(950, 600);
         setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // Header
-        JPanel panelHeader = new JPanel(new BorderLayout());
-        panelHeader.setBackground(new Color(0, 153, 76)); // Màu xanh lá Đoàn
-        panelHeader.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 20));
+        // --- 1. HEADER THANH ĐIỀU HÀNH (ĐÃ THÊM NÚT ĐĂNG XUẤT) ---
+        JPanel pnlHeader = new JPanel(new BorderLayout());
+        pnlHeader.setBackground(new Color(13, 110, 253));
+        pnlHeader.setBorder(new EmptyBorder(12, 25, 12, 25));
 
-        JLabel lblTitle = new JLabel("HE THONG QUAN LY VAN PHONG DOAN");
-        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        JLabel lblTitle = new JLabel("BẢNG ĐIỀU HÀNH THÀNH VIÊN ĐOÀN");
+        lblTitle.setFont(new Font("Segoe UI", Font.BOLD, 20));
         lblTitle.setForeground(Color.WHITE);
 
-        JPanel panelUser = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        panelUser.setOpaque(false);
+        // Panel góc phải chứa tên người dùng & Nút Đăng xuất
+        JPanel pnlRightHeader = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
+        pnlRightHeader.setOpaque(false);
 
-        JLabel lblWelcome = new JLabel("Xin chào: " + ns.getHoTen() + " (" + ns.getLop() + ")");
-        lblWelcome.setFont(new Font("Segoe UI", Font.ITALIC, 14));
-        lblWelcome.setForeground(Color.WHITE);
+        String nameDisplay = (currentUser != null && currentUser.getHoTen() != null) ? currentUser.getHoTen() : "Thành viên";
+        JLabel lblUser = new JLabel("Xin chào, " + nameDisplay + "!");
+        lblUser.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        lblUser.setForeground(Color.WHITE);
 
         JButton btnDangXuat = new JButton("Đăng xuất");
-        btnDangXuat.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        btnDangXuat.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btnDangXuat.setBackground(new Color(220, 53, 69)); // Màu đỏ nổi bật
+        btnDangXuat.setForeground(Color.WHITE);
+        btnDangXuat.setFocusPainted(false);
+        btnDangXuat.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btnDangXuat.setPreferredSize(new Dimension(100, 32));
+
+        // Sự kiện Đăng xuất quay về LoginView
         btnDangXuat.addActionListener(e -> {
-            this.dispose();
-            new LoginView().setVisible(true);
+            int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn đăng xuất?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                new LoginView().setVisible(true);
+                this.dispose();
+            }
         });
 
-        panelUser.add(lblWelcome);
-        panelUser.add(btnDangXuat);
+        pnlRightHeader.add(lblUser);
+        pnlRightHeader.add(btnDangXuat);
 
-        panelHeader.add(lblTitle, BorderLayout.WEST);
-        panelHeader.add(panelUser, BorderLayout.EAST);
-        add(panelHeader, BorderLayout.NORTH);
+        pnlHeader.add(lblTitle, BorderLayout.WEST);
+        pnlHeader.add(pnlRightHeader, BorderLayout.EAST);
+        add(pnlHeader, BorderLayout.NORTH);
 
-        // Center Menu Buttons
-        JPanel panelMenu = new JPanel(new GridLayout(2, 2, 20, 20));
-        panelMenu.setBorder(BorderFactory.createEmptyBorder(25, 40, 25, 40));
+        // --- 2. GRID 4 NÚT KHỐI MÀU NỔI BẬT ---
+        JPanel pnlButtons = new JPanel(new GridLayout(2, 2, 22, 22));
+        pnlButtons.setBackground(new Color(238, 242, 246));
+        pnlButtons.setBorder(new EmptyBorder(30, 35, 30, 35));
 
-        JButton btnCaTruc = new JButton("Đăng ký Ca trực");
-        btnCaTruc.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        
-        JButton btnSuKien = new JButton("Đăng ký Sự kiện");
-        btnSuKien.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        
-        JButton btnTruyenThong = new JButton("Nhiệm vụ Truyền thông");
-        btnTruyenThong.setFont(new Font("Segoe UI", Font.BOLD, 15));
-        
-        JButton btnCaNhan = new JButton("Thông tin Cá nhân");
-        btnCaNhan.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        JButton btnLichTruc = createSolidButton("ĐĂNG KÝ LỊCH TRỰC", new Color(40, 167, 69));
+        JButton btnSuKien = createSolidButton("ĐĂNG KÝ SỰ KIỆN", new Color(13, 110, 253));
+        JButton btnNhiemVu = createSolidButton("NHIỆM VỤ TRUYỀN THÔNG", new Color(255, 179, 0));
+        JButton btnHoSo = createSolidButton("HỒ SƠ & THỐNG KÊ CÁ NHÂN", new Color(108, 117, 125));
 
-        // GẮN SỰ KIỆN KHI THÀNH VIÊN BẤM NÚT
-        btnCaTruc.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Mở màn hình Đăng ký ca trực dành cho: " + currentUser.getHoTen());
-            // new DangKyCaTrucView(currentUser).setVisible(true);
+        pnlButtons.add(btnLichTruc);
+        pnlButtons.add(btnSuKien);
+        pnlButtons.add(btnNhiemVu);
+        pnlButtons.add(btnHoSo);
+
+        add(pnlButtons, BorderLayout.CENTER);
+
+        // --- 3. BẮT SỰ KIỆN MỞ DIALOG ---
+        btnLichTruc.addActionListener(e -> {
+            DangKyCaTrucDialog dialog = new DangKyCaTrucDialog(this, currentUser);
+            dialog.setVisible(true);
         });
 
         btnSuKien.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Mở danh sách các sự kiện đang cho phép đăng ký!");
+            DangKySuKienDialog dialog = new DangKySuKienDialog(this, currentUser);
+            dialog.setVisible(true);
         });
 
-        btnTruyenThong.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Mở danh sách bài viết/nhiệm vụ được giao!");
+        btnHoSo.addActionListener(e -> {
+            ThongTinCaNhanDialog dialog = new ThongTinCaNhanDialog(this, currentUser);
+            dialog.setVisible(true);
         });
 
-        btnCaNhan.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Thông tin tài khoản: " + currentUser.getHoTen() + " - SĐT: " + currentUser.getSoDienThoai());
+        btnNhiemVu.addActionListener(e -> {
+            NhiemVuTruyenThongDialog dialog = new NhiemVuTruyenThongDialog(this, currentUser);
+            dialog.setVisible(true);
         });
+    }
 
-        panelMenu.add(btnCaTruc);
-        panelMenu.add(btnSuKien);
-        panelMenu.add(btnTruyenThong);
-        panelMenu.add(btnCaNhan);
+    private JButton createSolidButton(String text, Color bg) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 17));
+        btn.setBackground(bg);
+        btn.setForeground(Color.WHITE);
+        btn.setFocusPainted(false);
+        btn.setBorderPainted(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return btn;
+    }
 
-        add(panelMenu, BorderLayout.CENTER);
+    public static void main(String[] args) {
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception ignored) {}
+
+        SwingUtilities.invokeLater(() -> {
+            NhanSu dummyUser = new NhanSu();
+            dummyUser.setMaSV("TV01");
+            dummyUser.setHoTen("Trần Thị B");
+
+            DashboardView dashboard = new DashboardView(dummyUser);
+            dashboard.setVisible(true);
+        });
     }
 }

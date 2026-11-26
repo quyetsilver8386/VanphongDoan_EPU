@@ -21,7 +21,6 @@ public class TruyenThongView extends JFrame {
     private NhanSu currentUser;
     private NhanSuDAO nhanSuDAO = new NhanSuDAO();
 
-    // Components bên trái
     private JTextField txtIdBaiViet;
     private JTextField txtTieuDe;
     private JComboBox<String> cbNguoiPhuTrach;
@@ -34,7 +33,6 @@ public class TruyenThongView extends JFrame {
     private JButton btnXoa;
     private JButton btnLamMoi;
 
-    // Components bên phải
     private JTextField txtTimKiem;
     private JComboBox<String> cbFilterTrangThai;
     private JButton btnTimKiem;
@@ -100,7 +98,6 @@ public class TruyenThongView extends JFrame {
     }
 
     private void initUI() {
-        // ================= 1. HEADER =================
         JPanel panelHeader = new JPanel(new BorderLayout());
         panelHeader.setBackground(new Color(0, 102, 204));
         panelHeader.setBorder(new EmptyBorder(12, 20, 12, 20));
@@ -119,7 +116,6 @@ public class TruyenThongView extends JFrame {
         panelHeader.add(lblUser, BorderLayout.EAST);
         add(panelHeader, BorderLayout.NORTH);
 
-        // ================= 2. PANEL FORM TRÁI =================
         JPanel panelLeftContainer = new JPanel(new BorderLayout());
         panelLeftContainer.setBorder(new EmptyBorder(0, 10, 10, 5));
         panelLeftContainer.setPreferredSize(new Dimension(380, 0));
@@ -227,7 +223,6 @@ public class TruyenThongView extends JFrame {
         panelLeftContainer.add(panelLeft, BorderLayout.CENTER);
         add(panelLeftContainer, BorderLayout.WEST);
 
-        // ================= 3. BẢNG DỮ LIỆU PHẢI =================
         JPanel panelRight = new JPanel(new BorderLayout(5, 8));
         panelRight.setBorder(new EmptyBorder(0, 5, 10, 15));
 

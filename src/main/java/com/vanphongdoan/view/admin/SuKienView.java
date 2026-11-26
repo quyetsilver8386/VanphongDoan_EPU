@@ -240,10 +240,7 @@ public class SuKienView extends JFrame {
 
         String[] columns = {"Mã SK", "Tên sự kiện", "Ngày tổ chức", "Địa điểm", "Kinh phí (VNĐ)", "Vị trí mở tuyển", "Trạng thái"};
         tableModel = new DefaultTableModel(columns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
+            @Override public boolean isCellEditable(int row, int column) { return false; }
         };
         table = new JTable(tableModel);
         table.setRowHeight(26);
@@ -424,20 +421,13 @@ public class SuKienView extends JFrame {
 
     private JMenuBar createMenuBar() {
         JMenuBar menuBar = new JMenuBar();
-
         JMenu menuHeThong = new JMenu("Hệ thống");
         JMenuItem menuDangXuat = new JMenuItem("Đăng xuất");
         JMenuItem menuThoat = new JMenuItem("Thoát");
 
-        menuDangXuat.addActionListener(e -> {
-            new LoginView().setVisible(true);
-            this.dispose();
-        });
+        menuDangXuat.addActionListener(e -> { new LoginView().setVisible(true); this.dispose(); });
         menuThoat.addActionListener(e -> System.exit(0));
-
-        menuHeThong.add(menuDangXuat);
-        menuHeThong.addSeparator();
-        menuHeThong.add(menuThoat);
+        menuHeThong.add(menuDangXuat); menuHeThong.addSeparator(); menuHeThong.add(menuThoat);
 
         JMenu menuChucNang = new JMenu("Quản lý Chức năng");
         JMenuItem menuNhanSu = new JMenuItem("Quản lý Nhân sự");

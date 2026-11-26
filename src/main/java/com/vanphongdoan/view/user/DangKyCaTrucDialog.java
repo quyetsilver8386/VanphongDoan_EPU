@@ -16,13 +16,13 @@ public class DangKyCaTrucDialog extends JDialog {
     private NhanSu currentUser;
     private JTable tableLichTruc;
     private DefaultTableModel tableModel;
-    
+
     private CaTruc[][] matrixCaTruc = new CaTruc[2][5];
 
     public DangKyCaTrucDialog(JFrame parent, NhanSu currentUser) {
         super(parent, "LỊCH TRỰC VĂN PHÒNG ĐOÀN - ĐĂNG KÝ & XIN HỦY CA", true);
         this.currentUser = currentUser;
-        setSize(1350, 580); 
+        setSize(1350, 580);
         setLocationRelativeTo(parent);
         setLayout(new BorderLayout(12, 12));
 
@@ -41,9 +41,9 @@ public class DangKyCaTrucDialog extends JDialog {
         };
 
         tableLichTruc = new JTable(tableModel);
-        tableLichTruc.setRowHeight(180); 
+        tableLichTruc.setRowHeight(180);
         tableLichTruc.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-        
+
         tableLichTruc.setShowGrid(true);
         tableLichTruc.setGridColor(new Color(210, 210, 210));
 
@@ -64,7 +64,7 @@ public class DangKyCaTrucDialog extends JDialog {
         for (int i = 0; i < cols.length; i++) {
             tableLichTruc.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
         }
-        
+
         tableLichTruc.getColumnModel().getColumn(0).setPreferredWidth(130);
         tableLichTruc.getColumnModel().getColumn(0).setMaxWidth(130);
 
@@ -72,7 +72,7 @@ public class DangKyCaTrucDialog extends JDialog {
 
         // --- 3. FOOTER NÚT BẤM ---
         JPanel pnlBottom = new JPanel(new FlowLayout(FlowLayout.RIGHT, 18, 15));
-        
+
         JButton btnXinHuy = new JButton("Gửi yêu cầu xin hủy ca");
         btnXinHuy.setBackground(new Color(204, 102, 0));
         btnXinHuy.setForeground(Color.WHITE);
@@ -104,8 +104,8 @@ public class DangKyCaTrucDialog extends JDialog {
             }
 
             String cellValue = (String) tableModel.getValueAt(row, col);
-            if (cellValue == null || cellValue.contains("Chưa mở")) {
-                JOptionPane.showMessageDialog(this, "Ca trực này hiện chưa mở!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+            if (cellValue == null || !cellValue.contains("[Mở đăng ký]")) {
+                JOptionPane.showMessageDialog(this, "Ca trực này hiện không ở trạng thái Mở đăng ký!", "Thông báo", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
@@ -124,17 +124,14 @@ public class DangKyCaTrucDialog extends JDialog {
                 return;
             }
 
-            targetCa.setMaSV(currentUser.getMaSV());
-            targetCa.setHoTen(currentUser.getHoTen());
-            targetCa.setTrangThai("Đã phân công");
-
-            if (caTrucDAO.update(targetCa)) {
+            if (caTrucDAO.dangKyCaTruc(targetCa.getIdCa(), currentUser.getMaSV(), currentUser.getHoTen())) {
                 String buoiStr = (row == 0) ? "Sáng" : "Chiều";
                 String thuStr = getThuString(col);
                 JOptionPane.showMessageDialog(this, "Đăng ký thành công ca " + buoiStr + " (" + thuStr + ")!");
                 loadDataToGrid();
             } else {
-                JOptionPane.showMessageDialog(this, "Đăng ký thất bại! Vui lòng thử lại.", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Ca trực này vừa có người khác đăng ký hoặc đã đóng!", "Thông báo", JOptionPane.WARNING_MESSAGE);
+                loadDataToGrid();
             }
         });
 
@@ -171,7 +168,7 @@ public class DangKyCaTrucDialog extends JDialog {
 
             if (lyDo != null) {
                 targetCa.setTrangThai("Chờ hủy");
-                
+
                 String oldGhiChu = targetCa.getGhiChu() != null ? targetCa.getGhiChu() : "";
                 String minhChung = (tenAnh == null || tenAnh.isEmpty()) ? "" : " | Ảnh đính kèm: " + tenAnh;
                 targetCa.setGhiChu(oldGhiChu + " [Xin hủy: " + lyDo + minhChung + "]");
@@ -195,35 +192,63 @@ public class DangKyCaTrucDialog extends JDialog {
         tableModel.setRowCount(0);
         matrixCaTruc = new CaTruc[2][5];
 
+        java.time.LocalDate today = java.time.LocalDate.now();
+        java.time.LocalDate monday = today.with(java.time.DayOfWeek.MONDAY);
+        java.time.LocalDate friday = monday.plusDays(4);
+
+        java.time.format.DateTimeFormatter fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM");
+        String[] newHeaders = {
+            "Buổi / Ca",
+            "Thứ Hai (" + monday.format(fmt) + ")",
+            "Thứ Ba (" + monday.plusDays(1).format(fmt) + ")",
+            "Thứ Tư (" + monday.plusDays(2).format(fmt) + ")",
+            "Thứ Năm (" + monday.plusDays(3).format(fmt) + ")",
+            "Thứ Sáu (" + friday.format(fmt) + ")"
+        };
+        tableModel.setColumnIdentifiers(newHeaders);
+        tableLichTruc.getColumnModel().getColumn(0).setPreferredWidth(130);
+        tableLichTruc.getColumnModel().getColumn(0).setMaxWidth(130);
+
+        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
+        centerRenderer.setHorizontalAlignment(JLabel.CENTER);
+        for (int i = 0; i < newHeaders.length; i++) {
+            tableLichTruc.getColumnModel().getColumn(i).setCellRenderer(centerRenderer);
+        }
+
         List<CaTruc> list = caTrucDAO.getAllCaTruc();
 
-        String[] rowSang = {"<html><center><font size='4' color='#003366'><b>SÁNG</b></font><br><font size='2.5' color='#555555'><i>(8h - 11h)</i></font></center></html>", 
-                            "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>", 
-                            "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>", 
-                            "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>", 
-                            "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>", 
-                            "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>"};
+        String[] rowSang = {
+            "<html><center><font size='4' color='#003366'><b>SÁNG</b></font><br><font size='2.5' color='#555555'><i>(8h - 11h)</i></font></center></html>",
+            "<html><center><font size='3.5' color='#888888'><i>Chưa mở lịch</i></font></center></html>",
+            "<html><center><font size='3.5' color='#888888'><i>Chưa mở lịch</i></font></center></html>",
+            "<html><center><font size='3.5' color='#888888'><i>Chưa mở lịch</i></font></center></html>",
+            "<html><center><font size='3.5' color='#888888'><i>Chưa mở lịch</i></font></center></html>",
+            "<html><center><font size='3.5' color='#888888'><i>Chưa mở lịch</i></font></center></html>"
+        };
 
-        String[] rowChieu = {"<html><center><font size='4' color='#993300'><b>CHIỀU</b></font><br><font size='2.5' color='#555555'><i>(14h - 17h)</i></font></center></html>", 
-                             "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>", 
-                             "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>", 
-                             "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>", 
-                             "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>", 
-                             "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>"};
+        String[] rowChieu = {
+            "<html><center><font size='4' color='#993300'><b>CHIỀU</b></font><br><font size='2.5' color='#555555'><i>(14h - 17h)</i></font></center></html>",
+            "<html><center><font size='3.5' color='#888888'><i>Chưa mở lịch</i></font></center></html>",
+            "<html><center><font size='3.5' color='#888888'><i>Chưa mở lịch</i></font></center></html>",
+            "<html><center><font size='3.5' color='#888888'><i>Chưa mở lịch</i></font></center></html>",
+            "<html><center><font size='3.5' color='#888888'><i>Chưa mở lịch</i></font></center></html>",
+            "<html><center><font size='3.5' color='#888888'><i>Chưa mở lịch</i></font></center></html>"
+        };
 
         for (CaTruc ct : list) {
-            int colIndex = getColumnIndexByThu(ct.getThu());
-            if (colIndex != -1) {
-                int rowIndex = (ct.getBuoiTruc() != null && ct.getBuoiTruc().equalsIgnoreCase("Sáng")) ? 0 : 1;
-                matrixCaTruc[rowIndex][colIndex - 1] = ct;
+            if (ct.getNgayTruc() == null || ct.getNgayTruc().isEmpty()) continue;
+            try {
+                java.time.LocalDate ngayCa = java.time.LocalDate.parse(ct.getNgayTruc().trim());
+                if (!ngayCa.isBefore(monday) && !ngayCa.isAfter(friday)) {
+                    int colIndex = ngayCa.getDayOfWeek().getValue();
+                    int rowIndex = (ct.getBuoiTruc() != null && ct.getBuoiTruc().equalsIgnoreCase("Sáng")) ? 0 : 1;
+                    matrixCaTruc[rowIndex][colIndex - 1] = ct;
 
-                String cellText = formatCellContent(ct);
-                if (rowIndex == 0) {
-                    rowSang[colIndex] = cellText;
-                } else {
-                    rowChieu[colIndex] = cellText;
+                    String cellText = formatCellContent(ct);
+                    if (rowIndex == 0) rowSang[colIndex] = cellText;
+                    else rowChieu[colIndex] = cellText;
                 }
-            }
+            } catch (Exception ignored) {}
         }
 
         tableModel.addRow(rowSang);
@@ -231,7 +256,7 @@ public class DangKyCaTrucDialog extends JDialog {
     }
 
     private String formatCellContent(CaTruc ct) {
-        String trangThai = ct.getTrangThai() != null ? ct.getTrangThai() : "";
+        String trangThai = ct.getTrangThai() != null ? ct.getTrangThai().trim() : "";
         String maSVNhan = ct.getMaSV() != null ? ct.getMaSV().trim() : "";
         String hoTenNhan = ct.getHoTen() != null ? ct.getHoTen().trim() : "";
 
@@ -248,22 +273,15 @@ public class DangKyCaTrucDialog extends JDialog {
         } else if ("Đã phân công".equalsIgnoreCase(trangThai) || !maSVNhan.isEmpty()) {
             return "<html><center><font size='4' color='#cc0000'><b>[Đã có người đăng ký]</b></font><br><br>"
                  + "<font size='3' color='#333333'>" + hoTenNhan + "</font></center></html>";
-        } else {
+        } else if ("Mở đăng ký".equalsIgnoreCase(trangThai)) {
             return "<html><center><font size='4' color='#0044cc'><b>[Mở đăng ký]</b></font></center></html>";
+        } else {
+            String nhanHienThi = trangThai.isEmpty() ? "Đã đóng" : trangThai;
+            return "<html><center><font size='4' color='#666666'><b>[" + nhanHienThi + "]</b></font><br>"
+                 + "<font size='2.5' color='#888888'><i>(Ngừng nhận đăng ký)</i></font></center></html>";
         }
     }
 
-    private int getColumnIndexByThu(String thu) {
-        if (thu == null) return -1;
-        String t = thu.trim().toLowerCase();
-        if (t.contains("2") || t.contains("hai")) return 1;
-        if (t.contains("3") || t.contains("ba")) return 2;
-        if (t.contains("4") || t.contains("tư")) return 3;
-        if (t.contains("5") || t.contains("năm")) return 4;
-        if (t.contains("6") || t.contains("sáu")) return 5;
-        return -1;
-    }
-    
     private String getThuString(int col) {
         switch (col) {
             case 1: return "Thứ 2";
@@ -285,7 +303,7 @@ public class DangKyCaTrucDialog extends JDialog {
             NhanSu dummyUser = new NhanSu();
             dummyUser.setMaSV("TV01");
             dummyUser.setHoTen("Trần Thị B");
-            
+
             DangKyCaTrucDialog dialog = new DangKyCaTrucDialog(dummyFrame, dummyUser);
             dialog.setVisible(true);
             System.exit(0);

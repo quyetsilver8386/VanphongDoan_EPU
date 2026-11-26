@@ -1,6 +1,7 @@
 package com.vanphongdoan.view.admin;
 
 import com.vanphongdoan.dao.NhanSuDAO;
+import com.vanphongdoan.dao.TruyenThongDAO;
 import com.vanphongdoan.model.NhanSu;
 import com.vanphongdoan.model.PhanQuyen;
 import com.vanphongdoan.view.LoginView;
@@ -20,6 +21,7 @@ public class TruyenThongView extends JFrame {
 
     private NhanSu currentUser;
     private NhanSuDAO nhanSuDAO = new NhanSuDAO();
+    private TruyenThongDAO truyenThongDAO = new TruyenThongDAO();
 
     private JTextField txtIdBaiViet;
     private JTextField txtTieuDe;
@@ -39,10 +41,8 @@ public class TruyenThongView extends JFrame {
     private JTable table;
     private DefaultTableModel tableModel;
 
-    // Lưu danh sách gốc trong bộ nhớ để tìm kiếm/lọc không làm mất dữ liệu
     private List<Object[]> danhSachAnPham = new ArrayList<>();
 
-    // Menu Bar
     private JMenuItem menuNhanSu;
     private JMenuItem menuCaTruc;
     private JMenuItem menuSuKien;
@@ -55,7 +55,6 @@ public class TruyenThongView extends JFrame {
     public TruyenThongView(NhanSu user) {
         this.currentUser = user;
 
-        // 1. Kiểm soát quyền bảo mật: Cho phép Ban Truyền thông (ID_Ban == 3) HOẶC được Admin cấp quyền
         if (currentUser != null && currentUser.getIdVaiTro() == 2) {
             boolean coQuyen = (currentUser.getIdBan() != null && currentUser.getIdBan() == 3);
             PhanQuyen pq = nhanSuDAO.getPhanQuyenByUsername(currentUser.getTenDangNhap());
@@ -93,8 +92,7 @@ public class TruyenThongView extends JFrame {
         initUI();
         initEvents();
         loadDanhSachNguoiPhuTrach();
-        initDefaultData();
-        refreshTable();
+        loadDataFromDB();
     }
 
     private void initUI() {
@@ -147,7 +145,8 @@ public class TruyenThongView extends JFrame {
         txtDeadline.setPreferredSize(new Dimension(0, 28));
         txtDeadline.setToolTipText("Nhập định dạng YYYY-MM-DD hoặc DD/MM/YYYY");
 
-        cbTrangThai = new JComboBox<>(new String[]{"Lên ý tưởng", "Đang thiết kế/viết bài", "Chờ duyệt", "Đã đăng"});
+        // Đồng bộ 4 trạng thái với NhiemVuTruyenThongDialog của Thành viên
+        cbTrangThai = new JComboBox<>(new String[]{"Mới phân công", "Đang làm", "Đang chờ", "Đã hoàn thành"});
         cbTrangThai.setPreferredSize(new Dimension(0, 28));
 
         txtNoiDung = new JTextArea(4, 20);
@@ -239,7 +238,7 @@ public class TruyenThongView extends JFrame {
         btnTimKiem.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
         cbFilterTrangThai = new JComboBox<>(new String[]{
-                "-- Tất cả trạng thái --", "Lên ý tưởng", "Đang thiết kế/viết bài", "Chờ duyệt", "Đã đăng"
+                "-- Tất cả trạng thái --", "Mới phân công", "Đang làm", "Đang chờ", "Đã hoàn thành"
         });
         cbFilterTrangThai.setPreferredSize(new Dimension(165, 28));
 
@@ -343,14 +342,16 @@ public class TruyenThongView extends JFrame {
             new SuKienView(currentUser).setVisible(true);
             this.dispose();
         });
-        menuTruyenThong.addActionListener(e -> clearForm());
+        menuTruyenThong.addActionListener(e -> {
+            loadDataFromDB();
+            clearForm();
+        });
 
         menuChucNang.add(menuNhanSu);
         menuChucNang.add(menuCaTruc);
         menuChucNang.add(menuSuKien);
         menuChucNang.add(menuTruyenThong);
 
-        // Phân quyền Menu Bar: Mở mặc định theo ID_Ban + cộng gộp quyền Admin cấp thêm
         if (currentUser != null && currentUser.getIdVaiTro() == 2) {
             Integer idBan = currentUser.getIdBan();
             boolean quyenCaTruc = (idBan != null && idBan == 1);
@@ -375,7 +376,10 @@ public class TruyenThongView extends JFrame {
     }
 
     private void initEvents() {
-        btnLamMoi.addActionListener(e -> clearForm());
+        btnLamMoi.addActionListener(e -> {
+            loadDataFromDB();
+            clearForm();
+        });
 
         table.addMouseListener(new MouseAdapter() {
             @Override
@@ -399,25 +403,19 @@ public class TruyenThongView extends JFrame {
                 txtTieuDe.requestFocus();
                 return;
             }
-            int maxId = 0;
-            for (Object[] r : danhSachAnPham) {
-                int id = Integer.parseInt(r[0].toString());
-                if (id > maxId) maxId = id;
-            }
             String phuTrach = cbNguoiPhuTrach.getEditor().getItem() != null
                     ? cbNguoiPhuTrach.getEditor().getItem().toString().trim() : "";
+            String deadline = chuanHoaNgay(txtDeadline.getText());
+            String trangThai = cbTrangThai.getSelectedItem().toString();
+            String moTa = txtNoiDung.getText().trim();
 
-            danhSachAnPham.add(new Object[]{
-                    String.valueOf(maxId + 1),
-                    tieuDe,
-                    phuTrach,
-                    chuanHoaNgay(txtDeadline.getText()),
-                    cbTrangThai.getSelectedItem().toString(),
-                    txtNoiDung.getText().trim()
-            });
-            refreshTable();
-            JOptionPane.showMessageDialog(this, "Thêm nhiệm vụ truyền thông thành công!");
-            clearForm();
+            if (truyenThongDAO.insert(tieuDe, phuTrach, deadline, trangThai, moTa)) {
+                loadDataFromDB();
+                JOptionPane.showMessageDialog(this, "Thêm nhiệm vụ truyền thông vào CSDL thành công!");
+                clearForm();
+            } else {
+                JOptionPane.showMessageDialog(this, "Thêm thất bại! Kiểm tra định dạng ngày (YYYY-MM-DD).", "Lỗi", JOptionPane.ERROR_MESSAGE);
+            }
         });
 
         btnSua.addActionListener(e -> {
@@ -426,21 +424,20 @@ public class TruyenThongView extends JFrame {
                 JOptionPane.showMessageDialog(this, "Vui lòng chọn dòng cần cập nhật!", "Thông báo", JOptionPane.WARNING_MESSAGE);
                 return;
             }
+            int id = Integer.parseInt(idCanSua);
+            String tieuDe = txtTieuDe.getText().trim();
             String phuTrach = cbNguoiPhuTrach.getEditor().getItem() != null
                     ? cbNguoiPhuTrach.getEditor().getItem().toString().trim() : "";
+            String deadline = chuanHoaNgay(txtDeadline.getText());
+            String trangThai = cbTrangThai.getSelectedItem().toString();
+            String moTa = txtNoiDung.getText().trim();
 
-            for (Object[] r : danhSachAnPham) {
-                if (r[0].toString().equals(idCanSua)) {
-                    r[1] = txtTieuDe.getText().trim();
-                    r[2] = phuTrach;
-                    r[3] = chuanHoaNgay(txtDeadline.getText());
-                    r[4] = cbTrangThai.getSelectedItem().toString();
-                    r[5] = txtNoiDung.getText().trim();
-                    break;
-                }
+            if (truyenThongDAO.update(id, tieuDe, phuTrach, deadline, trangThai, moTa)) {
+                loadDataFromDB();
+                JOptionPane.showMessageDialog(this, "Cập nhật thành công!");
+            } else {
+                JOptionPane.showMessageDialog(this, "Cập nhật thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
-            refreshTable();
-            JOptionPane.showMessageDialog(this, "Cập nhật thành công!");
         });
 
         btnXoa.addActionListener(e -> {
@@ -449,11 +446,16 @@ public class TruyenThongView extends JFrame {
                 JOptionPane.showMessageDialog(this, "Vui lòng chọn dòng cần xóa!", "Thông báo", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn xóa bài viết này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
+            int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn xóa nhiệm vụ này?", "Xác nhận", JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
-                danhSachAnPham.removeIf(r -> r[0].toString().equals(idCanXoa));
-                refreshTable();
-                clearForm();
+                int id = Integer.parseInt(idCanXoa);
+                if (truyenThongDAO.delete(id)) {
+                    loadDataFromDB();
+                    clearForm();
+                    JOptionPane.showMessageDialog(this, "Đã xóa nhiệm vụ!");
+                } else {
+                    JOptionPane.showMessageDialog(this, "Xóa thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                }
             }
         });
 
@@ -476,11 +478,9 @@ public class TruyenThongView extends JFrame {
         table.clearSelection();
     }
 
-    private void initDefaultData() {
-        danhSachAnPham.clear();
-        danhSachAnPham.add(new Object[]{"1", "Bài viết Chào Tân Sinh Viên D19", "Nguyễn Duy Bảo - 24810200011", "2026-11-05", "Đang thiết kế/viết bài", "Đăng fanpage Đoàn EPU"});
-        danhSachAnPham.add(new Object[]{"2", "Infographic Ngày Pháp Luật VN", "Đỗ Nguyễn Quyết - 24810310003", "2026-11-09", "Chờ duyệt", "Kèm video recap ngắn"});
-        danhSachAnPham.add(new Object[]{"3", "Minigame Tìm Hiểu Truyền Thống Đoàn", "Lê Thanh Như Ngọc - 24810200012", "2026-11-15", "Lên ý tưởng", "Chuẩn bị 5 phần quà"});
+    private void loadDataFromDB() {
+        danhSachAnPham = truyenThongDAO.getAll();
+        refreshTable();
     }
 
     private void refreshTable() {
@@ -507,4 +507,4 @@ public class TruyenThongView extends JFrame {
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new TruyenThongView(null).setVisible(true));
     }
-}
+}   

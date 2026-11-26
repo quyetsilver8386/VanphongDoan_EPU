@@ -99,9 +99,9 @@ public class DangKySuKienDialog extends JDialog {
                 return;
             }
 
-            String rawViTri = sk.getDanhSachViTri();
+            String rawViTri = sk.getViTriTuyen();
             if (rawViTri == null || rawViTri.trim().isEmpty()) {
-                rawViTri = "MC, Lễ tân, Chạy sự kiện, Hậu cần";
+                rawViTri = sk.getDanhSachViTri();
             }
             String[] viTriOptions = rawViTri.split("\\s*,\\s*");
 
@@ -206,5 +206,47 @@ public class DangKySuKienDialog extends JDialog {
             dialog.setVisible(true);
             System.exit(0);
         });
+    }
+    public java.util.List<com.vanphongdoan.model.SuKien> getAllSuKienForUser(String maSV) {
+        java.util.List<com.vanphongdoan.model.SuKien> list = new java.util.ArrayList<>();
+        String sql = "SELECT sk.*, dk.ViTriDangKy, dk.TrangThaiDuyet "
+                   + "FROM SuKien sk "
+                   + "LEFT JOIN DangKySuKien dk ON sk.ID_SuKien = dk.ID_SuKien AND dk.MaSV = ? "
+                   + "ORDER BY sk.NgayToChuc DESC";
+        try (java.sql.Connection conn = com.vanphongdoan.config.DatabaseConnection.getConnection();
+             java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maSV);
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    com.vanphongdoan.model.SuKien sk = new com.vanphongdoan.model.SuKien();
+                    sk.setIdSuKien(rs.getInt("ID_SuKien"));
+                    sk.setTenSuKien(rs.getString("TenSuKien"));
+                    sk.setNgayToChuc(rs.getString("NgayToChuc"));
+                    sk.setDiaDiem(rs.getString("DiaDiem"));
+                    sk.setKinhPhi(rs.getDouble("KinhPhi"));
+                    sk.setTrangThai(rs.getString("TrangThai"));
+                    try { sk.setViTriTuyen(rs.getString("ViTriTuyen")); } catch (Exception ignored) {}
+                    try { sk.setViTriDangKy(rs.getString("ViTriDangKy")); } catch (Exception ignored) {}
+                    try { sk.setTrangThaiDangKy(rs.getString("TrangThaiDuyet")); } catch (Exception ignored) {}
+                    list.add(sk);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public boolean huyDangKySuKien(String maSV, int idSuKien) {
+        String sql = "DELETE FROM DangKySuKien WHERE MaSV = ? AND ID_SuKien = ?";
+        try (java.sql.Connection conn = com.vanphongdoan.config.DatabaseConnection.getConnection();
+             java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, maSV);
+            ps.setInt(2, idSuKien);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }

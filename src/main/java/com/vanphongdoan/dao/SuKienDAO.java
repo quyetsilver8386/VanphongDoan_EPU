@@ -84,27 +84,47 @@ public class SuKienDAO {
     // Các phương thức phục vụ giao diện Thành viên (User)
     public List<SuKien> getAllSuKienForUser(String maSV) {
         List<SuKien> list = new ArrayList<>();
-        String sql = "SELECT sk.*, dk.ViTriDangKy, dk.TrangThaiDuyet "
-                   + "FROM SuKien sk "
-                   + "LEFT JOIN DangKySuKien dk ON sk.ID_SuKien = dk.ID_SuKien AND dk.MaSV = ? "
-                   + "ORDER BY sk.NgayToChuc DESC";
+        // Lấy toàn bộ sự kiện từ bảng SuKien trước
+        String sql = "SELECT * FROM SuKien ORDER BY NgayToChuc DESC";
         try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, maSV);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    SuKien sk = new SuKien();
-                    sk.setIdSuKien(rs.getInt("ID_SuKien"));
-                    sk.setTenSuKien(rs.getString("TenSuKien"));
-                    sk.setNgayToChuc(rs.getString("NgayToChuc"));
-                    sk.setDiaDiem(rs.getString("DiaDiem"));
-                    try { sk.setKinhPhi(rs.getDouble("KinhPhi")); } catch (Exception ignored) {}
-                    sk.setTrangThai(rs.getString("TrangThai"));
-                    try { sk.setViTriTuyen(rs.getString("ViTriTuyen")); } catch (Exception ignored) {}
-                    try { sk.setViTriDangKy(rs.getString("ViTriDangKy")); } catch (Exception ignored) {}
-                    try { sk.setTrangThaiDangKy(rs.getString("TrangThaiDuyet")); } catch (Exception ignored) {}
-                    list.add(sk);
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                SuKien sk = new SuKien();
+                int idSK = rs.getInt("ID_SuKien");
+                sk.setIdSuKien(idSK);
+                sk.setTenSuKien(rs.getString("TenSuKien"));
+                sk.setNgayToChuc(rs.getString("NgayToChuc"));
+                sk.setDiaDiem(rs.getString("DiaDiem"));
+                try { sk.setKinhPhi(rs.getDouble("KinhPhi")); } catch (Exception ignored) {}
+                sk.setTrangThai(rs.getString("TrangThai"));
+                
+                String viTri = "";
+                try { viTri = rs.getString("ViTriTuyen"); } catch (Exception ignored) {}
+                if (viTri == null || viTri.isEmpty()) {
+                    try { viTri = rs.getString("DanhSachViTri"); } catch (Exception ignored) {}
                 }
+                sk.setViTriTuyen(viTri);
+
+                // Kiểm tra xem sinh viên này đã đăng ký sự kiện này chưa
+                String sqlDK = "SELECT * FROM DangKySuKien WHERE MaSV = ? AND ID_SuKien = ?";
+                try (PreparedStatement psDK = conn.prepareStatement(sqlDK)) {
+                    psDK.setString(1, maSV);
+                    psDK.setInt(2, idSK);
+                    try (ResultSet rsDK = psDK.executeQuery()) {
+                        if (rsDK.next()) {
+                            try { sk.setViTriDangKy(rsDK.getString("ViTriDangKy")); } catch (Exception ignored) {}
+                            String ttDK = "";
+                            try { ttDK = rsDK.getString("TrangThaiDuyet"); } catch (Exception ignored) {}
+                            if (ttDK == null || ttDK.isEmpty()) {
+                                try { ttDK = rsDK.getString("TrangThai"); } catch (Exception ignored) {}
+                            }
+                            sk.setTrangThaiDangKy(ttDK);
+                        }
+                    }
+                } catch (Exception ignored) {}
+
+                list.add(sk);
             }
         } catch (Exception e) {
             e.printStackTrace();
